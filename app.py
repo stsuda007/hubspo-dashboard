@@ -4,10 +4,10 @@ import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- Google Sheets認証 ---
+# --- 認証処理 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-SERVICE_ACCOUNT_FILE = "your_credentials.json"  # credentialsファイルをリポジトリに追加しておく
-creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, scope)
+credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
+creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
 gc = gspread.authorize(creds)
 
 # --- シートキーとワークシート名 ---
