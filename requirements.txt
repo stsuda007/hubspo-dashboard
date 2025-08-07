@@ -1,3 +1,5 @@
 streamlit
-plotly
+gspread
+oauth2client
 pandas
+plotly
