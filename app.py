@@ -12,7 +12,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope
 gc = gspread.authorize(creds)
 
 # --- スプレッドシート設定 ---
-SPREADSHEET_KEY = "【あなたのスプレッドシートキーに置き換え】"
+SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
