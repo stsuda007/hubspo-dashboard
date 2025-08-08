@@ -1,8 +1,9 @@
-import json  # ← これを忘れずに！
+import json
+import pandas as pd
 import streamlit as st
+import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
