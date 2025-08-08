@@ -1,3 +1,8 @@
+import json  # ← これを忘れずに！
+import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
