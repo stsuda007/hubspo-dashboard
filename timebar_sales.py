@@ -82,12 +82,12 @@ def pipeline_chart_juchu(df):
     """
     案件の中で「受注」したものに絞り込み、初回商談日から受注日までのパイプラインチャートを作成します。
     """
+    st.title("HubSpot Deals ダッシュボード")
     st.subheader("受注案件のパイプラインチャート")
 
     # データフィルタリング
-    # ここでは、ユーザーが提供した条件に基づいて列名を仮定しています。
-    # '受注/失注'という列がデータフレームに存在すると仮定します。
-    df_filtered = df[(df['受注/失注'] == '受注') & (df['受注目標日'].apply(lambda x: isinstance(x, str) and x != ''))]
+    # 「受注/失注」が「受注」のものだけをピックアップする
+    df_filtered = df[(df['受注/失注'] == '受注')]
 
     # 日付列をdatetime型に変換
     date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付'] # 'その他日付'は仮の列名
@@ -95,14 +95,9 @@ def pipeline_chart_juchu(df):
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
-    # 受注目標日が未来のものをフィルタリング
-    #today = datetime.now().date()
-    #df_filtered = df_filtered[df_filtered['受注目標日'].dt.date >= today]
-
-    # 案件ステータスによるフィルタリング
-    #target_stages = ['検証サンプル', '受領完了', '撮像/解析', '検証報告/初期提案', '提案書/見積提出', '無償トライアル中/現地', '稟議中']
-    #df_filtered = df_filtered[df_filtered['Stage Name'].isin(target_stages)]
-
+    # df_filteredから無効なデータやNaNを除外
+    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日', '受注目標日'])
+    
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
         return
@@ -183,38 +178,5 @@ def pipeline_chart_juchu(df):
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --- UI：フィルターとボタン ---
-st.title("HubSpot Deals ダッシュボード")
-st.subheader("取引ステージ別・担当者別の積み上げ棒グラフ")
-
-with st.form("filter_form"):
-    default_users = sorted(merged_df["Full Name"].dropna().unique())
-    default_stages = sorted(merged_df["Stage Name"].dropna().unique())
-    selected_users = st.multiselect("担当者を選択", default_users, default=default_users)
-    selected_stages = st.multiselect("取引ステージを選択", default_stages, default=default_stages)
-    update_chart = st.form_submit_button("グラフを更新")
-
-if update_chart or st.session_state.get("initial_render", True):
-    st.session_state["initial_render"] = False
-
-    # グラフ用データ整形
-    pivot_df = merged_df.groupby(["Full Name", "Stage Name"])["Deal Name"].count().unstack(fill_value=0)
-    pivot_df = pivot_df.reset_index().melt(id_vars="Full Name", var_name="Stage", value_name="Count")
-
-    # グラフ描画
-    # こちらのグラフは削除されました
-    # fig = px.bar(
-    #     pivot_df,
-    #     x="Full Name",
-    #     y="Count",
-    #     color="Stage",
-    #     title="担当者ごとのDeals件数（取引ステージ別）",
-    #     hover_data={"Stage": True, "Count": True},
-    # )
-    # fig.update_layout(barmode="stack", xaxis_title="担当者", yaxis_title="件数")
-    # st.plotly_chart(fig, use_container_width=True)
-
-    # 新しく追加したチャートを表示
-    pipeline_chart_juchu(merged_df)
-else:
-    st.info("左のチェックを変更した後は、\"グラフを更新\"ボタンを押してください。")
+# アプリのメイン実行部分
+pipeline_chart_juchu(merged_df)
