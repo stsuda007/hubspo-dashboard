@@ -89,7 +89,7 @@ def pipeline_chart_juchu(df):
     df_filtered = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
 
     # Convert date columns to datetime objects
-    date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付']
+    date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付', '報告/提案日']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
@@ -150,15 +150,17 @@ def pipeline_chart_juchu(df):
             hovertext=f"案件名: {row['案件名']}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
         ))
         
-        # Add markers for other dates (if they exist)
-        if 'その他日付' in df_plot.columns and pd.notna(row['その他日付']):
+        # Add markers for '報告/提案日' (if they exist)
+        if '報告/提案日' in df_plot.columns and pd.notna(row['報告/提案日']):
             fig.add_trace(go.Scatter(
-                x=[row['その他日付']],
+                x=[row['報告/提案日']],
                 y=[row['案件名']],
                 mode='markers',
                 marker=dict(color='green', size=10, symbol='circle'),
-                name=f"{row['案件名']} (その他)",
-                showlegend=False
+                name=f"{row['案件名']} (報告/提案)",
+                showlegend=False,
+                hoverinfo='text',
+                hovertext=f"案件名: {row['案件名']}<br>報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
             ))
 
     fig.update_layout(
