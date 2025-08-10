@@ -111,10 +111,18 @@ def pipeline_chart_juchu(df):
     # Create the Plotly Gantt chart
     fig = go.Figure()
 
-    # Add markers for each deal
+    # Add markers and connecting lines for each deal
     for index, row in df_plot.iterrows():
-        # Removed the Bar trace to eliminate the gray bar
-        
+        # Add a line connecting the start and end points
+        fig.add_trace(go.Scatter(
+            x=[row['Start'], row['Finish']],
+            y=[row['案件名'], row['案件名']],
+            mode='lines',
+            line=dict(color='black', width=3), # 3ptの太い黒線
+            showlegend=False,
+            hoverinfo='none' # Line itself doesn't need hover info
+        ))
+
         # Add a marker for the start date (blue circle)
         fig.add_trace(go.Scatter(
             x=[row['Start']],
@@ -161,7 +169,6 @@ def pipeline_chart_juchu(df):
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
             tickmode="linear",
-            # ティックマークを3カ月ごとに変更
             dtick="M3",
             tickformat="%Y-%m",
             showgrid=True,
