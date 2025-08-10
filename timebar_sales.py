@@ -71,7 +71,13 @@ deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stag
 deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
 deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
 stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
+
+# '受注金額'列から非数値文字（カンマ、全角数字など）を削除し、数値に変換
+deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace('[^0-9]', '', regex=True)
 deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
+
+# 金額を10000で割って切り捨てる
+deals_df["受注金額"] = (deals_df["受注金額"] / 10000).astype(int)
 
 merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
