@@ -76,8 +76,8 @@ stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
 deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace('[^0-9]', '', regex=True)
 deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
-# 金額を10000で割って切り捨てる
-deals_df["受注金額"] = (deals_df["受注金額"] / 10000).astype(int)
+# 金額を10000で割って切り捨てる前に、NaNを0に置き換える
+deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(int)
 
 merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
