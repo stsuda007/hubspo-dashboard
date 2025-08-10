@@ -9,7 +9,7 @@ from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
 
-# --- 認証 ---
+# --- Authentication ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
     credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
@@ -20,17 +20,17 @@ except KeyError:
     st.stop()
 
 
-# --- スプレッドシート設定 ---
+# --- Spreadsheet settings ---
 SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
 
-# --- データ取得関数（キャッシュ & リトライ） ---
+# --- Data fetching function (cached & with retry) ---
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
 def load_data_with_retry(max_retries=3, delay=5):
     """
-    Google Sheetsからデータを取得し、API制限に達した場合にリトライする関数。
+    Fetches data from Google Sheets and retries if an API rate limit is reached.
     """
     attempt = 0
     while attempt < max_retries:
@@ -56,13 +56,13 @@ def load_data_with_retry(max_retries=3, delay=5):
     st.error("Google Sheetsの読み込みに失敗しました。後ほど再試行してください。")
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-# --- データ読み込み ---
+# --- Load data ---
 deals_df, stages_df, users_df = load_data_with_retry()
 
 if deals_df.empty:
     st.stop()
 
-# --- IDを人名・ステージ名に変換 ---
+# --- Convert IDs to names ---
 users_df["Full Name"] = users_df["First Name"].fillna("") + " " + users_df["Last Name"].fillna("")
 users_df = users_df.rename(columns={"ID": "User ID"})
 deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
@@ -77,67 +77,57 @@ merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
 
-# --- 新規追加：案件パイプラインの受注チャート作成関数 ---
+# --- Function to create the deals pipeline chart ---
 def pipeline_chart_juchu(df):
     """
-    案件の中で「受注」したものに絞り込み、初回商談日から受注日までのパイプラインチャートを作成します。
+    Creates a pipeline chart for '受注' (won) deals from the start of the first negotiation to the closing date.
     """
     st.title("HubSpot Deals ダッシュボード")
     st.subheader("受注案件のパイプラインチャート")
 
-    # データフィルタリング
-    # 「受注/失注」が「受注」のものだけをピックアップする
+    # Filter data for '受注' (won) deals only
     df_filtered = df[(df['受注/失注'] == '受注')]
 
-    # 日付列をdatetime型に変換
-    date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付'] # 'その他日付'は仮の列名
+    # Convert date columns to datetime objects
+    date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
-    # df_filteredから無効なデータやNaNを除外
+    # Remove invalid or NaN data
     df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日', '受注目標日'])
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
         return
 
-    # プロット用のデータフレームを作成
+    # Create a DataFrame for plotting
     df_plot = df_filtered.copy()
     df_plot['案件名'] = df_plot['Deal Name']
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
     df_plot = df_plot.sort_values('Start')
 
-    # PlotlyのGanttチャートを作成
+    # Create the Plotly Gantt chart
     fig = go.Figure()
 
-    # 各案件のバーを追加
+    # Add markers for each deal
     for index, row in df_plot.iterrows():
-        fig.add_trace(go.Bar(
-            y=[row['案件名']],
-            x=[row['Finish']],
-            base=[row['Start']],
-            orientation='h',
-            marker=dict(color='lightgray', line=dict(color='darkgray', width=1)),
-            name=row['案件名'],
-            hoverinfo='text',
-            hovertext=f"案件名: {row['案件名']}<br>開始日: {row['Start'].strftime('%Y-%m-%d')}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']}万円"
-        ))
+        # Removed the Bar trace to eliminate the gray bar
         
-        # 初回商談実施日(開始)にマーカーを追加
+        # Add a marker for the start date (blue circle)
         fig.add_trace(go.Scatter(
             x=[row['Start']],
             y=[row['案件名']],
-            mode='markers+text',
+            mode='markers',
             marker=dict(color='blue', size=10, symbol='circle'),
-            text=[f"{row['受注金額']:,}万円"],
-            textposition="middle right",
             name=f"{row['案件名']} (初回商談)",
-            showlegend=False
+            showlegend=False,
+            hoverinfo='text',
+            hovertext=f"案件名: {row['案件名']}<br>開始日: {row['Start'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
         ))
 
-        # 受注日(終了)にマーカーと金額を追加
+        # Add a marker for the end date (red circle) with text for the amount
         fig.add_trace(go.Scatter(
             x=[row['Finish']],
             y=[row['案件名']],
@@ -146,10 +136,12 @@ def pipeline_chart_juchu(df):
             text=[f"{row['受注金額']:,}万円"],
             textposition="middle right",
             name=f"{row['案件名']} (受注日)",
-            showlegend=False
+            showlegend=False,
+            hoverinfo='text',
+            hovertext=f"案件名: {row['案件名']}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
         ))
         
-        # その他の日付（もしあれば）にもマーカーを追加
+        # Add markers for other dates (if they exist)
         if 'その他日付' in df_plot.columns and pd.notna(row['その他日付']):
             fig.add_trace(go.Scatter(
                 x=[row['その他日付']],
@@ -165,17 +157,20 @@ def pipeline_chart_juchu(df):
         xaxis_title="年月",
         yaxis_title="",
         showlegend=False,
-        barmode='stack',
         height=400 + 50 * len(df_plot),
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
             tickmode="linear",
-            dtick="M1",
-            tickformat="%Y-%m"
+            # ティックマークを3カ月ごとに変更
+            dtick="M3",
+            tickformat="%Y-%m",
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='rgba(128,128,128,0.5)'
         )
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-# アプリのメイン実行部分
+# Main part of the app
 pipeline_chart_juchu(merged_df)
