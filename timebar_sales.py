@@ -107,7 +107,7 @@ def pipeline_chart_juchu(df):
     df_plot['案件名'] = df_plot['Deal Name']
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
-    df_plot['Duration'] = df_plot['Finish'] - df_plot['Start']
+    # df_plot['Duration'] = df_plot['Finish'] - df_plot['Start'] # この行は使用しません
     df_plot = df_plot.sort_values('Start')
 
     # PlotlyのGanttチャートを作成
@@ -117,7 +117,8 @@ def pipeline_chart_juchu(df):
     for index, row in df_plot.iterrows():
         fig.add_trace(go.Bar(
             y=[row['案件名']],
-            x=[row['Duration'].days],
+            # ここを修正しました。
+            x=[row['Finish']],
             base=[row['Start']],
             orientation='h',
             marker=dict(color='lightgray', line=dict(color='darkgray', width=1)),
@@ -171,8 +172,7 @@ def pipeline_chart_juchu(df):
         barmode='stack',
         height=400 + 50 * len(df_plot),
         xaxis=dict(
-            tickformat="%Y-%m",
-            tickmode='auto'
+            tickformat="%Y-%m"
         )
     )
 
