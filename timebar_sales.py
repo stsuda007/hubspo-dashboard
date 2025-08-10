@@ -107,7 +107,6 @@ def pipeline_chart_juchu(df):
     df_plot['案件名'] = df_plot['Deal Name']
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
-    # df_plot['Duration'] = df_plot['Finish'] - df_plot['Start'] # この行は使用しません
     df_plot = df_plot.sort_values('Start')
 
     # PlotlyのGanttチャートを作成
@@ -117,7 +116,6 @@ def pipeline_chart_juchu(df):
     for index, row in df_plot.iterrows():
         fig.add_trace(go.Bar(
             y=[row['案件名']],
-            # ここを修正しました。
             x=[row['Finish']],
             base=[row['Start']],
             orientation='h',
@@ -133,7 +131,7 @@ def pipeline_chart_juchu(df):
             y=[row['案件名']],
             mode='markers+text',
             marker=dict(color='blue', size=10, symbol='circle'),
-            text=[f"{row['案件名']}"],
+            text=[f"{row['受注金額']:,}万円"],
             textposition="middle right",
             name=f"{row['案件名']} (初回商談)",
             showlegend=False
@@ -152,8 +150,6 @@ def pipeline_chart_juchu(df):
         ))
         
         # その他の日付（もしあれば）にもマーカーを追加
-        # この部分はデータに'その他日付'という列があることを前提としています。
-        # 実際の列名に合わせて変更してください。
         if 'その他日付' in df_plot.columns and pd.notna(row['その他日付']):
             fig.add_trace(go.Scatter(
                 x=[row['その他日付']],
@@ -172,6 +168,9 @@ def pipeline_chart_juchu(df):
         barmode='stack',
         height=400 + 50 * len(df_plot),
         xaxis=dict(
+            range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
+            tickmode="linear",
+            dtick="M1",
             tickformat="%Y-%m"
         )
     )
