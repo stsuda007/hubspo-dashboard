@@ -197,24 +197,22 @@ with st.form("filter_form"):
 if update_chart or st.session_state.get("initial_render", True):
     st.session_state["initial_render"] = False
 
-    # --- データフィルタリング ---
-    filtered_df = merged_df[merged_df["Full Name"].isin(selected_users) & merged_df["Stage Name"].isin(selected_stages)]
-
-    # --- グラフ用データ整形 ---
-    pivot_df = filtered_df.groupby(["Full Name", "Stage Name"])["Deal Name"].count().unstack(fill_value=0)
+    # グラフ用データ整形
+    pivot_df = merged_df.groupby(["Full Name", "Stage Name"])["Deal Name"].count().unstack(fill_value=0)
     pivot_df = pivot_df.reset_index().melt(id_vars="Full Name", var_name="Stage", value_name="Count")
 
-    # --- グラフ描画 ---
-    fig = px.bar(
-        pivot_df,
-        x="Full Name",
-        y="Count",
-        color="Stage",
-        title="担当者ごとのDeals件数（取引ステージ別）",
-        hover_data={"Stage": True, "Count": True},
-    )
-    fig.update_layout(barmode="stack", xaxis_title="担当者", yaxis_title="件数")
-    st.plotly_chart(fig, use_container_width=True)
+    # グラフ描画
+    # こちらのグラフは削除されました
+    # fig = px.bar(
+    #     pivot_df,
+    #     x="Full Name",
+    #     y="Count",
+    #     color="Stage",
+    #     title="担当者ごとのDeals件数（取引ステージ別）",
+    #     hover_data={"Stage": True, "Count": True},
+    # )
+    # fig.update_layout(barmode="stack", xaxis_title="担当者", yaxis_title="件数")
+    # st.plotly_chart(fig, use_container_width=True)
 
     # 新しく追加したチャートを表示
     pipeline_chart_juchu(merged_df)
