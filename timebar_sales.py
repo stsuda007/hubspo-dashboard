@@ -96,12 +96,12 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # 受注目標日が未来のものをフィルタリング
-    today = datetime.now().date()
-    df_filtered = df_filtered[df_filtered['受注目標日'].dt.date >= today]
+    #today = datetime.now().date()
+    #df_filtered = df_filtered[df_filtered['受注目標日'].dt.date >= today]
 
     # 案件ステータスによるフィルタリング
-    target_stages = ['検証サンプル', '受領完了', '撮像/解析', '検証報告/初期提案', '提案書/見積提出', '無償トライアル中/現地', '稟議中']
-    df_filtered = df_filtered[df_filtered['Stage Name'].isin(target_stages)]
+    #target_stages = ['検証サンプル', '受領完了', '撮像/解析', '検証報告/初期提案', '提案書/見積提出', '無償トライアル中/現地', '稟議中']
+    #df_filtered = df_filtered[df_filtered['Stage Name'].isin(target_stages)]
 
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
