@@ -95,7 +95,7 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
-    #df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
+    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
@@ -104,7 +104,7 @@ def pipeline_chart_juchu(df):
     # Create a DataFrame for plotting
     df_plot = df_filtered.copy()
     # 案件名にリード経路を追加
-    df_plot['案件名'] = df_plot['Deal Name'] + ' (' + df_plot['リード経路'] + ')'
+    df_plot['案件名'] = df_plot['Deal Name'] + '<br>' + '(' + df_plot['リード経路'] + ')'
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
     df_plot = df_plot.sort_values('Start')
@@ -133,7 +133,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (初回商談)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['案件名']}<br>開始日: {row['Start'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>開始日: {row['Start'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
         ))
 
         # Add a marker for the end date (red circle) with text for the amount
@@ -147,7 +147,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (受注日)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['案件名']}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
         ))
         
         # Add markers for '報告/提案日' (if they exist)
@@ -160,7 +160,7 @@ def pipeline_chart_juchu(df):
                 name=f"{row['案件名']} (報告/提案)",
                 showlegend=False,
                 hoverinfo='text',
-                hovertext=f"案件名: {row['案件名']}<br>報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
+                hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
             ))
 
     fig.update_layout(
@@ -168,6 +168,7 @@ def pipeline_chart_juchu(df):
         xaxis_title="年月",
         yaxis_title="",
         showlegend=False,
+        # グラフの高さを動的に調整
         height=400 + 50 * len(df_plot),
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
@@ -177,7 +178,9 @@ def pipeline_chart_juchu(df):
             showgrid=True,
             gridwidth=1,
             gridcolor='rgba(128,128,128,0.5)'
-        )
+        ),
+        # Y軸の文字を2行に折り返すように設定
+        yaxis=dict(automargin=True)
     )
 
     st.plotly_chart(fig, use_container_width=True)
