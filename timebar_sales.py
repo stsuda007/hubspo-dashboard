@@ -85,8 +85,8 @@ def pipeline_chart_juchu(df):
     st.title("HubSpot Deals ダッシュボード")
     st.subheader("受注案件のパイプラインチャート")
 
-    # Filter data for '受注' (won) deals only
-    df_filtered = df[(df['受注/失注'] == '受注')]
+    # Filter data for '受注' (won) deals only, or where '受注日' is not empty
+    df_filtered = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
 
     # Convert date columns to datetime objects
     date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付']
@@ -95,7 +95,7 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
-    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日', '受注目標日'])
+    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
@@ -103,7 +103,8 @@ def pipeline_chart_juchu(df):
 
     # Create a DataFrame for plotting
     df_plot = df_filtered.copy()
-    df_plot['案件名'] = df_plot['Deal Name']
+    # 案件名にリード経路を追加
+    df_plot['案件名'] = df_plot['Deal Name'] + ' (' + df_plot['リード経路'] + ')'
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
     df_plot = df_plot.sort_values('Start')
