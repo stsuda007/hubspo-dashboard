@@ -156,7 +156,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (受注日)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['Deal Name']}金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>金額: {row['受注金額']:,}万円"
         ))
         
         # Add markers for '報告/提案日' (if they exist)
