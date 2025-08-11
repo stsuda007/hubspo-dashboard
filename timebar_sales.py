@@ -112,11 +112,7 @@ def pipeline_chart_juchu(df):
     # 初回商談実施日が空欄の場合はCreate Dateで補完
     df_filtered['初回商談実施日'] = df_filtered['初回商談実施日'].fillna(df_filtered['Create Date'])
     
-    if df_filtered.empty:
-        st.info("条件に一致する受注案件がありませんでした。")
-        return
-
-    # Create a DataFrame for plotting
+    # 補完後のデータフレームで再度フィルタリング
     df_plot = df_filtered.copy()
     
     # 案件名にリード経路を追加
@@ -127,6 +123,8 @@ def pipeline_chart_juchu(df):
     df_plot['Finish'] = pd.to_datetime(df_plot['受注日'], errors='coerce')
     
     # グラフの始点（Start）と終点（Finish）の両方がないデータを削除
+    # この処理は、前のステップで受注日がないデータは削除しているため、
+    # 'Start'がNaTになっているデータのみを削除することになる
     df_plot = df_plot.dropna(subset=['Start', 'Finish'])
     st.write("最終的なグラフ表示データ数:", len(df_plot))
 
