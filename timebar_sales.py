@@ -137,12 +137,17 @@ def pipeline_chart_juchu(df):
             x=[row['Start']],
             y=[row['案件名']],
             mode='markers',
-            marker=dict(color='blue', size=10, symbol='circle'),
+            marker=dict(
+                color='blue' if pd.notna(row['初回商談実施日']) else 'grey', # 色分け
+                size=10,
+                symbol='circle'
+            ),
             name=f"{row['案件名']} (初回商談)",
             showlegend=False,
             hoverinfo='text',
             hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>金額: {row['受注金額']:,}万円"
         ))
+
 
         # Add a marker for the end date (red circle) with text for the amount
         fig.add_trace(go.Scatter(
