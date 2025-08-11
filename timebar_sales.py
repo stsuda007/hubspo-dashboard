@@ -121,8 +121,10 @@ def pipeline_chart_juchu(df):
     
     # 案件名にリード経路を追加
     df_plot['案件名'] = df_plot['Deal Name'] + '<br>' + '(' + df_plot['リード経路'] + ')'
-    df_plot['Start'] = df_plot['初回商談実施日']
-    df_plot['Finish'] = df_plot['受注日']
+    
+    # 確実にdatetime型に変換してから'Start'と'Finish'列を作成
+    df_plot['Start'] = pd.to_datetime(df_plot['初回商談実施日'], errors='coerce')
+    df_plot['Finish'] = pd.to_datetime(df_plot['受注日'], errors='coerce')
     
     # グラフの始点（Start）と終点（Finish）の両方がないデータを削除
     df_plot = df_plot.dropna(subset=['Start', 'Finish'])
