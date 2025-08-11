@@ -91,8 +91,8 @@ def pipeline_chart_juchu(df):
     st.subheader("受注案件のパイプラインチャート")
     st.write("元のデータ数:", len(df))
 
-    # Filter data for '受注' (won) deals only, and deals with a closing date
-    df_filtered = df[(df['受注/失注'] == '受注')]
+    # Filter data for '受注' (won) deals only
+    df_filtered = df[(df['受注/失注'] == '受注')].copy()
     st.write("受注フラグのデータ数:", len(df_filtered))
 
     # Convert date columns to datetime objects
@@ -100,36 +100,38 @@ def pipeline_chart_juchu(df):
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
-
-    # Remove invalid or NaN data
-    df_filtered = df_filtered.dropna(subset=['受注日'])
-    st.write("受注日記載のデータ数:", len(df_filtered))
-    st.write("Create Date記載のデータ数:", len(df_filtered['Create Date']))
     
-    # Create a flag for fallback dates
+    # グラフの終点である受注日がないデータは削除
+    df_filtered = df_filtered.dropna(subset=['受注日'])
+    st.write("受注日不記載のデータを削除しました。データ数:", len(df_filtered))
+    
+    # 初回商談実施日が空欄の場合のフラグを作成
     df_filtered['is_start_date_fallback'] = df_filtered['初回商談実施日'].isna()
-    st.write("初回商談実施日不記載のデータ数:", len(df_filtered['is_start_date_fallback']))
+    st.write("初回商談実施日不記載のデータ数:", df_filtered['is_start_date_fallback'].sum())
 
-    # Fill NaT in '初回商談実施日' with 'Create Date'
+    # 初回商談実施日が空欄の場合はCreate Dateで補完
     df_filtered['初回商談実施日'] = df_filtered['初回商談実施日'].fillna(df_filtered['Create Date'])
     
-    # Explicitly coerce the column to datetime type after fillna to ensure consistency
-    df_filtered['初回商談実施日'] = pd.to_datetime(df_filtered['初回商談実施日'], errors='coerce')
-
-    # Remove rows where both '初回商談実施日' and '受注日' are NaT (which should be handled by the previous dropna)
-    #df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
-    st.write("最終的なグラフ表示データ数:", len(df_filtered))
-
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
         return
 
     # Create a DataFrame for plotting
     df_plot = df_filtered.copy()
+    
     # 案件名にリード経路を追加
     df_plot['案件名'] = df_plot['Deal Name'] + '<br>' + '(' + df_plot['リード経路'] + ')'
     df_plot['Start'] = df_plot['初回商談実施日']
     df_plot['Finish'] = df_plot['受注日']
+    
+    # グラフの始点（Start）と終点（Finish）の両方がないデータを削除
+    df_plot = df_plot.dropna(subset=['Start', 'Finish'])
+    st.write("最終的なグラフ表示データ数:", len(df_plot))
+
+    if df_plot.empty:
+        st.info("プロット可能な受注案件がありませんでした。")
+        return
+
     df_plot = df_plot.sort_values('Start')
 
     # Create the Plotly Gantt chart
