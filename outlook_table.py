@@ -150,19 +150,20 @@ def display_pipeline_projects_table(df):
         
     # ソート
     display_df = display_df.sort_values(by=['営業担当者', '受注金額'], ascending=[True, False])
-    # 日付型に変換（エラー処理を追加）
+    
+    # 日付型に変換
     for col in ['受注目標日', '納品予定日']:
         display_df[col] = pd.to_datetime(display_df[col], errors='coerce')  # Invalid values become NaT
-        display_df[col] = display_df[col].fillna(pd.Timestamp('2020-01-01'))  # Optional: fill NaT with a default value
-
+        display_df[col] = display_df[col].fillna(pd.Timestamp('1970-01-01'))  # Fill NaT with a default date if needed
+        
     # 営業担当者ごとにデータをグループ化
     grouped = display_df.groupby('営業担当者')
-    
+
     # 各営業担当者のデータを個別に表示
     for name, group in grouped:
         st.subheader(f"営業担当者: {name}")
-        # ソート
-        group = group.sort_values(by=['受注目標日'], ascending=[True, False])
+        # 受注目標日でソート
+        group = group.sort_values(by=['受注目標日'], ascending=[True, False])  # Sort by date
         # Streamlitでデータフレームを表示
         st.dataframe(group, use_container_width=True)
 
