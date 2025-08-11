@@ -117,9 +117,12 @@ def display_pipeline_projects_table(df):
         df (pd.DataFrame): 処理済みのDataFrame。
     """
     st.subheader("パイプライン案件一覧")
+
     
-    # 受注目標日または納品予定日が記載されている案件のみにフィルタリング
-    df_pipeline = df[df['受注目標日'].notna() | df['納品予定日'].notna()].copy()
+    # 現在の日付を取得
+    today = datetime.now()
+    # '受注目標日'が未来の日付であるか、または'納品予定日'が記載されている案件を抽出
+    df_pipeline = df[(pd.to_datetime(df['受注目標日'], errors='coerce') > today) | df['納品予定日'].notna()].copy()
     
     if df_pipeline.empty:
         st.info("受注目標日または納品予定日が記載されている案件がありません。")
@@ -159,12 +162,12 @@ def display_pipeline_projects_table(df):
         
     # 営業担当者ごとにデータをグループ化
     grouped = display_df.groupby('営業担当者')
-
     # 各営業担当者のデータを個別に表示
     for name, group in grouped:
-        st.subheader(f"営業担当者: {name}")
-        # Streamlitでデータフレームを表示
-        st.dataframe(group, use_container_width=True)
+        # st.expander を使って開閉可能なセクションを作成
+        with st.expander(f"営業担当者: {name}"):
+            # Streamlitでデータフレームを表示
+            st.dataframe(group, use_container_width=True)
 
 # --- メインアプリケーションの実行部分 ---
 def main():
