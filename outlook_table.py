@@ -129,7 +129,7 @@ def display_pipeline_projects_table(df):
     display_df = df_pipeline.rename(columns={
         'Full Name': '営業担当者', 
         'Deal Name': '案件名', 
-        '受注金額': '見込売上額（万円）'
+        '受注金額': '見込売上額'
     })
     
     # 表示するカラムを選択
@@ -139,7 +139,7 @@ def display_pipeline_projects_table(df):
         '受注目標日',
         '納品予定日',
         'Stage Name',
-        '見込売上額（万円）'
+        '見込売上額'
     ]
     
     # データフレームから必要なカラムのみを抽出
@@ -150,7 +150,11 @@ def display_pipeline_projects_table(df):
         display_df[col] = pd.to_datetime(display_df[col], errors='coerce').dt.strftime('%Y-%m-%d')
         
     # ソート
-    display_df = display_df.sort_values(by=['営業担当者', '見込売上額（万円）'], ascending=[True, False])
+    display_df = display_df.sort_values(by=['営業担当者', '見込売上額'], ascending=[True, False])
+    # 日付型に変換（エラー処理を追加）
+    for col in ['受注目標日', '納品予定日']:
+        display_df[col] = pd.to_datetime(display_df[col], errors='coerce')  # Invalid values become NaT
+        display_df[col] = display_df[col].fillna(pd.Timestamp('2020-01-01'))  # Optional: fill NaT with a default value
 
     # 営業担当者ごとにデータをグループ化
     grouped = display_df.groupby('営業担当者')
