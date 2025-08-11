@@ -104,6 +104,7 @@ def pipeline_chart_juchu(df):
     # Remove invalid or NaN data
     df_filtered = df_filtered.dropna(subset=['受注日'])
     st.write("受注日記載のデータ数:", len(df_filtered))
+    st.write("Create Date記載のデータ数:", len(df_filtered['Create Date']))
     
     # Create a flag for fallback dates
     df_filtered['is_start_date_fallback'] = df_filtered['初回商談実施日'].isna()
