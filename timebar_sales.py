@@ -114,7 +114,7 @@ def pipeline_chart_juchu(df):
     df_filtered['初回商談実施日'] = df_filtered['初回商談実施日'].fillna(df_filtered['Create Date'])
     
     # Explicitly coerce the column to datetime type after fillna to ensure consistency
-    df_filtered['初回商談実施日'] = pd.to_datetime(df_filtered['初回商談実施日'], errors='coerce')
+    #df_filtered['初回商談実施日'] = pd.to_datetime(df_filtered['初回商談実施日'], errors='coerce')
 
     # Remove rows where both '初回商談実施日' and '受注日' are NaT (which should be handled by the previous dropna)
     df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
