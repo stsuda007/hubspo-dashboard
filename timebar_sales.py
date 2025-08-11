@@ -95,7 +95,7 @@ def pipeline_chart_juchu(df):
     df_filtered = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
 
     # Convert date columns to datetime objects
-    date_columns = ['初回商談実施日', '受注日', '受注目標日', 'その他日付', '報告/提案日']
+    date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
@@ -139,7 +139,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (初回商談)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>開始日: {row['Start'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>担当者:{row['顧客担当者']}<br>金額: {row['受注金額']:,}万円"
         ))
 
         # Add a marker for the end date (red circle) with text for the amount
@@ -153,7 +153,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (受注日)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>終了日: {row['Finish'].strftime('%Y-%m-%d')}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}金額: {row['受注金額']:,}万円"
         ))
         
         # Add markers for '報告/提案日' (if they exist)
@@ -162,11 +162,23 @@ def pipeline_chart_juchu(df):
                 x=[row['報告/提案日']],
                 y=[row['案件名']],
                 mode='markers',
-                marker=dict(color='green', size=10, symbol='circle'),
+                marker=dict(color='rgba(0, 0, 0, 0)', size=7, symbol='circle', line=dict(color='green', width=2))
                 name=f"{row['案件名']} (報告/提案)",
                 showlegend=False,
                 hoverinfo='text',
-                hovertext=f"案件名: {row['Deal Name']}<br>リード経路: {row['リード経路']}<br>報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
+                hovertext=f"報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
+            ))
+        # Add markers for '概算見積提出日' (if they exist)
+        if '概算見積提出日' in df_plot.columns and pd.notna(row['概算見積提出日']):
+            fig.add_trace(go.Scatter(
+                x=[row['概算見積提出日']],
+                y=[row['案件名']],
+                mode='markers',
+                marker=dict(color='rgba(0, 0, 0, 0)', size=7, symbol='circle', line=dict(color='green', width=2)),
+                name=f"{row['案件名']} (概算見積提出日)",
+                showlegend=False,
+                hoverinfo='text',
+                hovertext=f"概算見積提出日: {row['概算見積提出日'].strftime('%Y-%m-%d')}"
             ))
 
     fig.update_layout(
