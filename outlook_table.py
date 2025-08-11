@@ -102,9 +102,6 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
     
-    # 受注金額を万円単位に調整し、整数に変換
-    deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(int)
-
     # 複数DataFrameをマージ
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
@@ -139,10 +136,10 @@ def display_pipeline_projects_table(df):
     cols_to_display = [
         '営業担当者',
         '案件名',
-        'Stage Name',
-        '見込売上額（万円）',
         '受注目標日',
-        '納品予定日'
+        '納品予定日',
+        'Stage Name',
+        '見込売上額（万円）'
     ]
     
     # データフレームから必要なカラムのみを抽出
@@ -154,9 +151,17 @@ def display_pipeline_projects_table(df):
         
     # ソート
     display_df = display_df.sort_values(by=['営業担当者', '見込売上額（万円）'], ascending=[True, False])
+
+    # 営業担当者ごとにデータをグループ化
+    grouped = display_df.groupby('営業担当者')
     
-    # Streamlitでデータフレームを表示
-    st.dataframe(display_df, use_container_width=True)
+    # 各営業担当者のデータを個別に表示
+    for name, group in grouped:
+        st.subheader(f"営業担当者: {name}")
+        # ソート
+        group = group.sort_values(by=['受注目標日'], ascending=[True, False])
+        # Streamlitでデータフレームを表示
+        st.dataframe(group, use_container_width=True)
 
 # --- メインアプリケーションの実行部分 ---
 def main():
