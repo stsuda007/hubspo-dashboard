@@ -103,8 +103,8 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
-    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
-    st.write("商談実施日・受注日が空欄でないデータ数:", len(df_filtered))
+    df_filtered = df_filtered.dropna(subset=['受注日'])
+    st.write("受注日が空欄でないデータ数:", len(df_filtered))
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
@@ -190,8 +190,7 @@ def pipeline_chart_juchu(df):
         yaxis_title="",
         showlegend=False,
         # グラフの高さを動的に調整
-        #height=400 + 50 * len(df_plot),
-        #height=1000,
+        height=400 + 50 * len(df_plot),
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
             tickmode="linear",
