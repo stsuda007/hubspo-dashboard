@@ -123,8 +123,6 @@ def pipeline_chart_juchu(df):
     df_plot['Finish'] = pd.to_datetime(df_plot['受注日'], errors='coerce')
     
     # グラフの始点（Start）と終点（Finish）の両方がないデータを削除
-    # この処理は、前のステップで受注日がないデータは削除しているため、
-    # 'Start'がNaTになっているデータのみを削除することになる
     df_plot = df_plot.dropna(subset=['Start', 'Finish'])
     st.write("最終的なグラフ表示データ数:", len(df_plot))
 
