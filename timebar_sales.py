@@ -2,7 +2,6 @@ import time
 import json
 import gspread
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from datetime import datetime
@@ -19,7 +18,6 @@ except KeyError:
     st.error("Googleサービスアカウントの認証情報が設定されていません。`st.secrets`に`GOOGLE_SERVICE_ACCOUNT`を設定してください。")
     st.stop()
 
-
 # --- Spreadsheet settings ---
 SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
@@ -29,9 +27,6 @@ USERS_SHEET = "Users"
 # --- Data fetching function (cached & with retry) ---
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
 def load_data_with_retry(max_retries=3, delay=5):
-    """
-    Fetches data from Google Sheets and retries if an API rate limit is reached.
-    """
     attempt = 0
     while attempt < max_retries:
         try:
@@ -72,11 +67,11 @@ deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
 deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
 stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
 
-# '受注金額'列から非数値文字（カンマ、全角数字など）を削除し、数値に変換
+# Clean up non-numeric characters in deal amount and convert to numeric
 deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
 deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
-# 金額を10000で割って切り捨てる前に、NaNを0に置き換える
+# Adjust deal amount for better readability
 deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(int)
 
 merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
@@ -84,45 +79,36 @@ merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
 # --- Function to create the deals pipeline chart ---
 def pipeline_chart_juchu(df):
-    """
-    Creates a pipeline chart for '受注' (won) deals from the start of the first negotiation to the closing date.
-    """
     st.title("HubSpot Deals ダッシュボード")
     st.subheader("受注案件のパイプラインチャート")
     st.write("元のデータ数:", len(df))
 
-    # Filter data for '受注' (won) deals only
-    df_filtered = df[(df['受注/失注'] == '受注')].copy()
+    # Filter for '受注' (won) deals
+    df_filtered = df[df['受注/失注'] == '受注'].copy()
     st.write("受注フラグのデータ数:", len(df_filtered))
 
-    # Convert date columns to datetime objects
+    # Convert date columns to datetime
     date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
-    
-    # グラフの終点である受注日がないデータは削除
+
+    # Remove deals with no '受注日'
     df_filtered = df_filtered.dropna(subset=['受注日'])
     st.write("受注日不記載のデータを削除しました。データ数:", len(df_filtered))
     
-    # 初回商談実施日が空欄の場合のフラグを作成
-    df_filtered['is_start_date_fallback'] = df_filtered['初回商談実施日'].isna()
-    st.write("初回商談実施日不記載のデータ数:", df_filtered['is_start_date_fallback'].sum())
-
-    # 初回商談実施日が空欄の場合はCreate Dateで補完
+    # Fill missing '初回商談実施日' with 'Create Date'
     df_filtered['初回商談実施日'] = df_filtered['初回商談実施日'].fillna(df_filtered['Create Date'])
     
-    # 補完後のデータフレームで再度フィルタリング
+    if df_filtered.empty:
+        st.info("条件に一致する受注案件がありませんでした。")
+        return
+
     df_plot = df_filtered.copy()
-    
-    # 案件名にリード経路を追加
     df_plot['案件名'] = df_plot['Deal Name'] + '<br>' + '(' + df_plot['リード経路'] + ')'
-    
-    # 確実にdatetime型に変換してから'Start'と'Finish'列を作成
-    df_plot['Start'] = pd.to_datetime(df_plot['初回商談実施日'], errors='coerce')
-    df_plot['Finish'] = pd.to_datetime(df_plot['受注日'], errors='coerce')
-    
-    # グラフの始点（Start）と終点（Finish）の両方がないデータを削除
+    df_plot['Start'] = df_plot['初回商談実施日']
+    df_plot['Finish'] = df_plot['受注日']
+
     df_plot = df_plot.dropna(subset=['Start', 'Finish'])
     st.write("最終的なグラフ表示データ数:", len(df_plot))
 
@@ -135,22 +121,19 @@ def pipeline_chart_juchu(df):
     # Create the Plotly Gantt chart
     fig = go.Figure()
 
-    # Add markers and connecting lines for each deal
+    # Add markers and connecting lines
     for index, row in df_plot.iterrows():
-        # Add a line connecting the start and end points (no hover info on the line itself)
         fig.add_trace(go.Scatter(
             x=[row['Start'], row['Finish']],
             y=[row['案件名'], row['案件名']],
             mode='lines',
             line=dict(color='black', width=3),
             showlegend=False,
-            hoverinfo='none' # Changed to 'none' as hoverinfo on lines is not ideal
+            hoverinfo='none'
         ))
 
-        # Add a marker for the start date (blue circle)
-        # 初回商談実施日が空欄だった場合はグレーのマーカーで表示
-        marker_color = 'grey' if row['is_start_date_fallback'] else 'blue'
-        start_date_label = "案件作成日" if row['is_start_date_fallback'] else "初回商談実施日"
+        marker_color = 'grey' if pd.isna(row['初回商談実施日']) else 'blue'
+        start_date_label = "案件作成日" if pd.isna(row['初回商談実施日']) else "初回商談実施日"
         
         fig.add_trace(go.Scatter(
             x=[row['Start']],
@@ -163,7 +146,6 @@ def pipeline_chart_juchu(df):
             hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>日付: {row['Start'].strftime('%Y-%m-%d')}<br>種別: {start_date_label}"
         ))
 
-        # Add a marker for the end date (red circle) with text for the amount
         fig.add_trace(go.Scatter(
             x=[row['Finish']],
             y=[row['案件名']],
@@ -176,9 +158,9 @@ def pipeline_chart_juchu(df):
             hoverinfo='text',
             hovertext=f"案件名: {row['Deal Name']}<br>金額: {row['受注金額']:,}万円"
         ))
-        
-        # Add markers for '報告/提案日' (if they exist)
-        if '報告/提案日' in df_plot.columns and pd.notna(row['報告/提案日']):
+
+        # Report/Proposal date markers
+        if pd.notna(row.get('報告/提案日')):
             fig.add_trace(go.Scatter(
                 x=[row['報告/提案日']],
                 y=[row['案件名']],
@@ -189,25 +171,12 @@ def pipeline_chart_juchu(df):
                 hoverinfo='text',
                 hovertext=f"報告/提案日: {row['報告/提案日'].strftime('%Y-%m-%d')}"
             ))
-        # Add markers for '概算見積提出日' (if they exist)
-        if '概算見積提出日' in df_plot.columns and pd.notna(row['概算見積提出日']):
-            fig.add_trace(go.Scatter(
-                x=[row['概算見積提出日']],
-                y=[row['案件名']],
-                mode='markers',
-                marker=dict(color='rgba(0, 0, 0, 0)', size=7, symbol='circle', line=dict(color='green', width=2)),
-                name=f"{row['案件名']} (概算見積提出日)",
-                showlegend=False,
-                hoverinfo='text',
-                hovertext=f"概算見積提出日: {row['概算見積提出日'].strftime('%Y-%m-%d')}"
-            ))
 
     fig.update_layout(
         title="受注案件のパイプライン（初回商談日〜受注日）",
         xaxis_title="年月",
         yaxis_title="",
         showlegend=False,
-        # グラフの高さを動的に調整
         height=400 + 50 * len(df_plot),
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
@@ -218,12 +187,40 @@ def pipeline_chart_juchu(df):
             gridwidth=1,
             gridcolor='rgba(128,128,128,0.5)'
         ),
-        # Y軸の文字を2行に折り返すように設定
         yaxis=dict(automargin=True)
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-# Main part of the app
+# --- NEW: Pipeline Projects Table Function ---
+def table_of_pipeline_projects(df):
+    st.subheader("📊 パイプライン案件一覧")
+    
+    # Convert date columns
+    for col in ['受注目標日', '納品予定日']:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+
+    # Filter for pipeline condition
+    df_pipeline = df[df['受注目標日'].notna() | df['納品予定日'].notna()]
+
+    if df_pipeline.empty:
+        st.info("受注目標日または納品予定日が記載されている案件がありません。")
+        return
+
+    # Display the filtered DataFrame
+    display_df = df_pipeline.copy()
+    display_df = display_df.rename(columns={'Full Name': '営業担当者', 'Deal Name': '案件名', '受注金額': '見込売上額（万円）'})
+    
+    # Format date columns
+    display_df['予定日'] = display_df.apply(lambda row: f"受注目標: {row['受注目標日'].strftime('%Y-%m-%d')}" if pd.notna(row['受注目標日']) else "", axis=1)
+
+    # Sorting
+    display_df = display_df.sort_values(by=['営業担当者', '見込売上額（万円）'], ascending=[True, False])
+
+    st.dataframe(display_df)
+
+# --- MAIN APPLICATION ---
 pipeline_chart_juchu(merged_df)
-  
+st.divider()
+table_of_pipeline_projects(merged_df)
