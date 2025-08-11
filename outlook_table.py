@@ -162,7 +162,7 @@ def display_pipeline_projects_table(df):
     for name, group in grouped:
         st.subheader(f"営業担当者: {name}")
         # ソート
-        #group = group.sort_values(by=['受注目標日'], ascending=[True, False])
+        group = group.sort_values(by=['受注目標日'], ascending=[True, False])
         # Streamlitでデータフレームを表示
         st.dataframe(group, use_container_width=True)
 
