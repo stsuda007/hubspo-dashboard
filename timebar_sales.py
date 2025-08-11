@@ -90,9 +90,11 @@ def pipeline_chart_juchu(df):
     """
     st.title("HubSpot Deals ダッシュボード")
     st.subheader("受注案件のパイプラインチャート")
+    st.write("元のデータ数:", len(df))
 
     # Filter data for '受注' (won) deals only, or where '受注日' is not empty
     df_filtered = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
+    st.write("受注フラグのデータ数:", len(df_filtered))
 
     # Convert date columns to datetime objects
     date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日']
@@ -102,12 +104,7 @@ def pipeline_chart_juchu(df):
 
     # Remove invalid or NaN data
     df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
-    st.write("元のデータ数:", len(df))
-    
-    df_filtered_stage1 = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
-    st.write("1つ目のフィルタリング後のデータ数:", len(df_filtered_stage1))
-    df_filtered_final = df_filtered_stage1.dropna(subset=['初回商談実施日', '受注日'])
-    st.write("最終的なグラフ表示データ数:", len(df_filtered_final))
+    st.write("商談実施日・受注日が空欄でないデータ数:", len(df_filtered))
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
