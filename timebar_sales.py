@@ -102,6 +102,12 @@ def pipeline_chart_juchu(df):
 
     # Remove invalid or NaN data
     df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
+    st.write("元のデータ数:", len(df))
+    
+    df_filtered_stage1 = df[(df['受注/失注'] == '受注') | (df['受注日'].notna())]
+    st.write("1つ目のフィルタリング後のデータ数:", len(df_filtered_stage1))
+    df_filtered_final = df_filtered_stage1.dropna(subset=['初回商談実施日', '受注日'])
+    st.write("最終的なグラフ表示データ数:", len(df_filtered_final))
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
@@ -187,7 +193,8 @@ def pipeline_chart_juchu(df):
         yaxis_title="",
         showlegend=False,
         # グラフの高さを動的に調整
-        height=400 + 50 * len(df_plot),
+        #height=400 + 50 * len(df_plot),
+        #height=1000,
         xaxis=dict(
             range=[datetime(2024, 1, 1), datetime(2025, 12, 31)],
             tickmode="linear",
