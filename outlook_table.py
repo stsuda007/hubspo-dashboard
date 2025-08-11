@@ -107,9 +107,80 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
     
     return merged_df
-
-# --- パイプライン案件テーブル表示関数 ---
+    
+# --- パイプライン案件テーブル表示関数（修正版） ---
 def display_pipeline_projects_table(df):
+    """
+    パイプライン案件の一覧をテーブルとして表示する。
+    """
+    st.subheader("パイプライン案件一覧")
+
+    # 日付列をdatetime型に変換
+    df['受注目標日_dt'] = pd.to_datetime(df['受注目標日'], errors='coerce')
+    df['納品予定日_dt'] = pd.to_datetime(df['納品予定日'], errors='coerce')
+
+    # 現在の日付を取得
+    today = datetime.now()
+
+    # フィルタリング: 受注目標日が未来の案件、または納品予定日が記載されている案件
+    # 納品予定日は日付型に変換した列でNaNかどうかをチェック
+    df_pipeline = df[(df['受注目標日_dt'] > today) | df['納品予定日_dt'].notna()].copy()
+
+    if df_pipeline.empty:
+        st.info("未来の受注目標日がある案件、または納品予定日が記載されている案件がありません。")
+        return
+
+    # 表示用にカラム名を変更
+    display_df = df_pipeline.rename(columns={
+        'Full Name': '営業担当者',
+        'Deal Name': '案件名',
+        'Stage Name': 'フェーズ'
+    })
+
+    # 表示するカラムを選択
+    cols_to_display = [
+        '営業担当者',
+        '案件名',
+        '受注目標日_dt', # ソートに使うため一時的に使用
+        '納品予定日_dt', # ソートに使うため一時的に使用
+        'フェーズ',
+        '受注金額'
+    ]
+
+    display_df = display_df[cols_to_display]
+
+    # ソート: 営業担当者、受注目標日(昇順)、受注金額(降順)の順でソート
+    # NaT(欠損値)は最後に表示
+    display_df = display_df.sort_values(
+        by=['営業担当者', '受注目標日_dt', '受注金額'], 
+        ascending=[True, True, False],
+        na_position='last'
+    )
+
+    # 日付列を'YYYY-MM-DD'形式の文字列に変換
+    display_df['受注目標日'] = display_df['受注目標日_dt'].dt.strftime('%Y-%m-%d').fillna('')
+    display_df['納品予定日'] = display_df['納品予定日_dt'].dt.strftime('%Y-%m-%d').fillna('')
+
+    # 表示する最終的なカラムを選択（日付列を文字列形式に置き換え）
+    final_cols = [
+        '営業担当者',
+        '案件名',
+        '受注目標日',
+        '納品予定日',
+        'フェーズ',
+        '受注金額'
+    ]
+    display_df = display_df[final_cols]
+
+    # 営業担当者ごとにデータをグループ化
+    grouped = display_df.groupby('営業担当者')
+
+    # 各営業担当者のデータを個別に表示
+    for name, group in grouped:
+        with st.expander(f"営業担当者: {name}"):
+            st.dataframe(group, use_container_width=True)
+# --- パイプライン案件テーブル表示関数 ---
+def display_pipeline_projects_table_old(df):
     """
     パイプライン案件の一覧をテーブルとして表示する。
     
