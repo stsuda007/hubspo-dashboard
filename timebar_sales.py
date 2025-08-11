@@ -102,7 +102,7 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
-    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
+    df_filtered = df_filtered.dropna(subset=['受注日'])
     st.write("最終的なグラフ表示データ数:", len(df_filtered))
     
     if df_filtered.empty:
