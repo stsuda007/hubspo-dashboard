@@ -138,7 +138,7 @@ def display_pipeline_projects_table(df):
         '受注目標日',
         '納品予定日',
         'Stage Name',
-        '見込売上額'
+        '受注金額'
     ]
     
     # データフレームから必要なカラムのみを抽出
