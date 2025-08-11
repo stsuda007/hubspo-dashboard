@@ -155,7 +155,7 @@ def display_pipeline_projects_table(df):
     for col in ['受注目標日', '納品予定日']:
         display_df[col] = pd.to_datetime(display_df[col], errors='coerce')  # Invalid values become NaT
         display_df[col] = display_df[col].fillna(pd.Timestamp('1970-01-01'))  # Fill NaT with a default date if needed
-    display_df = display_df.sort_values(by=['受注目標日'],ascending=[True, False])
+    display_df = display_df.sort_values(by=['受注目標日'],ascending=[True])
         
     # 営業担当者ごとにデータをグループ化
     grouped = display_df.groupby('営業担当者')
