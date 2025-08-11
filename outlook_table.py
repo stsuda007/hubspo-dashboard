@@ -128,8 +128,7 @@ def display_pipeline_projects_table(df):
     # 表示用にカラム名を変更
     display_df = df_pipeline.rename(columns={
         'Full Name': '営業担当者', 
-        'Deal Name': '案件名', 
-        '受注金額': '見込売上額'
+        'Deal Name': '案件名'
     })
     
     # 表示するカラムを選択
