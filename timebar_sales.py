@@ -73,7 +73,7 @@ deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
 stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
 
 # '受注金額'列から非数値文字（カンマ、全角数字など）を削除し、数値に変換
-deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace('[^0-9]', '', regex=True)
+deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
 deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
 # 金額を10000で割って切り捨てる前に、NaNを0に置き換える
@@ -81,7 +81,6 @@ deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(i
 
 merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
-
 
 # --- Function to create the deals pipeline chart ---
 def pipeline_chart_juchu(df):
@@ -92,7 +91,7 @@ def pipeline_chart_juchu(df):
     st.subheader("受注案件のパイプラインチャート")
     st.write("元のデータ数:", len(df))
 
-    # Filter data for '受注' (won) deals only, or where '受注日' is not empty
+    # Filter data for '受注' (won) deals only, and deals with a closing date
     df_filtered = df[(df['受注/失注'] == '受注')]
     st.write("受注フラグのデータ数:", len(df_filtered))
 
@@ -103,8 +102,8 @@ def pipeline_chart_juchu(df):
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
-    df_filtered = df_filtered.dropna(subset=['受注日'])
-    st.write("受注日が空欄でないデータ数:", len(df_filtered))
+    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
+    st.write("最終的なグラフ表示データ数:", len(df_filtered))
     
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
@@ -123,14 +122,14 @@ def pipeline_chart_juchu(df):
 
     # Add markers and connecting lines for each deal
     for index, row in df_plot.iterrows():
-        # Add a line connecting the start and end points
+        # Add a line connecting the start and end points (no hover info on the line itself)
         fig.add_trace(go.Scatter(
             x=[row['Start'], row['Finish']],
             y=[row['案件名'], row['案件名']],
             mode='lines',
-            line=dict(color='black', width=3), # 3ptの太い黒線
+            line=dict(color='black', width=3),
             showlegend=False,
-            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>金額: {row['受注金額']:,}万円"
+            hoverinfo='none' # Changed to 'none' as hoverinfo on lines is not ideal
         ))
 
         # Add a marker for the start date (blue circle)
@@ -142,7 +141,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (初回商談)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"初回商談実施日: {row['初回商談実施日'].strftime('%Y-%m-%d')}"
+            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>金額: {row['受注金額']:,}万円"
         ))
 
         # Add a marker for the end date (red circle) with text for the amount
