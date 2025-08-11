@@ -226,3 +226,4 @@ def pipeline_chart_juchu(df):
 
 # Main part of the app
 pipeline_chart_juchu(merged_df)
+  
