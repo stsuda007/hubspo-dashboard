@@ -96,15 +96,24 @@ def pipeline_chart_juchu(df):
     st.write("受注フラグのデータ数:", len(df_filtered))
 
     # Convert date columns to datetime objects
-    date_columns = ['初回商談実施日', 'Create Date','受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日']
+    date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
 
     # Remove invalid or NaN data
     df_filtered = df_filtered.dropna(subset=['受注日'])
-    st.write("最終的なグラフ表示データ数:", len(df_filtered))
     
+    # Create a flag for fallback dates
+    df_filtered['is_start_date_fallback'] = df_filtered['初回商談実施日'].isna()
+
+    # Fill NaT in '初回商談実施日' with 'Create Date'
+    df_filtered['初回商談実施日'] = df_filtered['初回商談実施日'].fillna(df_filtered['Create Date'])
+
+    # Remove rows where both '初回商談実施日' and '受注日' are NaT (which should be handled by the previous dropna)
+    df_filtered = df_filtered.dropna(subset=['初回商談実施日', '受注日'])
+    st.write("最終的なグラフ表示データ数:", len(df_filtered))
+
     if df_filtered.empty:
         st.info("条件に一致する受注案件がありませんでした。")
         return
@@ -133,21 +142,20 @@ def pipeline_chart_juchu(df):
         ))
 
         # Add a marker for the start date (blue circle)
+        # 初回商談実施日が空欄だった場合はグレーのマーカーで表示
+        marker_color = 'grey' if row['is_start_date_fallback'] else 'blue'
+        start_date_label = "案件作成日" if row['is_start_date_fallback'] else "初回商談実施日"
+        
         fig.add_trace(go.Scatter(
             x=[row['Start']],
             y=[row['案件名']],
             mode='markers',
-            marker=dict(
-                color='blue' if pd.notna(row['初回商談実施日']) else 'grey', # 色分け
-                size=10,
-                symbol='circle'
-            ),
-            name=f"{row['案件名']} (初回商談)",
+            marker=dict(color=marker_color, size=10, symbol='circle'),
+            name=f"{row['案件名']} ({start_date_label})",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>日付: {row['Start'].strftime('%Y-%m-%d')}<br>種別: {start_date_label}"
         ))
-
 
         # Add a marker for the end date (red circle) with text for the amount
         fig.add_trace(go.Scatter(
