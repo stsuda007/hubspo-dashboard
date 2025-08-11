@@ -130,7 +130,7 @@ def pipeline_chart_juchu(df):
             mode='lines',
             line=dict(color='black', width=3), # 3ptの太い黒線
             showlegend=False,
-            hoverinfo=f"案件名: {row['Deal Name']}<br>営業担当:{row['Deal owner (name)']}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>金額: {row['受注金額']:,}万円"
         ))
 
         # Add a marker for the start date (blue circle)
