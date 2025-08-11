@@ -149,7 +149,7 @@ def display_pipeline_projects_table(df):
         display_df[col] = pd.to_datetime(display_df[col], errors='coerce').dt.strftime('%Y-%m-%d')
         
     # ソート
-    display_df = display_df.sort_values(by=['営業担当者', '見込売上額'], ascending=[True, False])
+    display_df = display_df.sort_values(by=['営業担当者', '受注金額'], ascending=[True, False])
     # 日付型に変換（エラー処理を追加）
     for col in ['受注目標日', '納品予定日']:
         display_df[col] = pd.to_datetime(display_df[col], errors='coerce')  # Invalid values become NaT
