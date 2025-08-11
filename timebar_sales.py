@@ -96,7 +96,7 @@ def pipeline_chart_juchu(df):
     st.write("受注フラグのデータ数:", len(df_filtered))
 
     # Convert date columns to datetime objects
-    date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日']
+    date_columns = ['初回商談実施日', 'Create Date','受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日']
     for col in date_columns:
         if col in df_filtered.columns:
             df_filtered[col] = pd.to_datetime(df_filtered[col], errors='coerce')
