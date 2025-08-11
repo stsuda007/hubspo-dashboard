@@ -162,7 +162,7 @@ def pipeline_chart_juchu(df):
                 x=[row['報告/提案日']],
                 y=[row['案件名']],
                 mode='markers',
-                marker=dict(color='rgba(0, 0, 0, 0)', size=7, symbol='circle', line=dict(color='green', width=2))
+                marker=dict(color='rgba(0, 0, 0, 0)', size=7, symbol='circle', line=dict(color='green', width=2)),
                 name=f"{row['案件名']} (報告/提案)",
                 showlegend=False,
                 hoverinfo='text',
