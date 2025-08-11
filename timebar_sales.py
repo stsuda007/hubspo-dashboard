@@ -139,7 +139,7 @@ def pipeline_chart_juchu(df):
             name=f"{row['案件名']} (初回商談)",
             showlegend=False,
             hoverinfo='text',
-            hovertext=f"案件名: {row['Deal Name']}<br>担当者:{row['顧客担当者']}<br>金額: {row['受注金額']:,}万円"
+            hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Deal owner (name)']}<br>金額: {row['受注金額']:,}万円"
         ))
 
         # Add a marker for the end date (red circle) with text for the amount
