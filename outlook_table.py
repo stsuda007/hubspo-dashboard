@@ -162,7 +162,7 @@ def display_pipeline_projects_table(df):
                 group2_to_display = group2.copy()
         
                 # 不要な列を削除
-                group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
+                #group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
         
                 # `受注金額` と `見込売上額` の列を文字列としてフォーマット
                 group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
