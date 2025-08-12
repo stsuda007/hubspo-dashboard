@@ -15,7 +15,7 @@ st.set_page_config(
     menu_items={
         'under_construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
         'menu_2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
-        'About': "# This is a header. This is an *extremely* cool app!"
+        'about': "# This is a header. This is an *extremely* cool app!"
     }
 )
 # --- 認証 ---
