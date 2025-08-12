@@ -166,12 +166,12 @@ def display_pipeline_projects_table(df):
                     "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
                         help="受注の目標日",
-                        format="YYYY/MM/DD",
+                        format="MM/DD",
                     ),
                     "納品予定日_dt": st.column_config.DateColumn(
                         "納品予定日",
                         help="納品の予定日",
-                        format="YYYY/MM/DD",
+                        format="MM/DD",
                     ),
                 },
                 hide_index=True,
@@ -192,7 +192,7 @@ def display_pipeline_projects_table(df):
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
     for name, group in grouped_by_user:
-        with st.expander(f"営業担当者: {name}"):
+        with st.expander(f"営業担当者: {name} 案件数:{grouped_by_user.len()}"):
             st.dataframe(
                 group.drop(columns=['Grouping Month']),
                 column_config={
@@ -209,22 +209,20 @@ def display_pipeline_projects_table(df):
                     "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
                         help="受注の目標日",
-                        format="YYYY/MM/DD",
+                        format="MM/DD",
                     ),
                     "納品予定日_dt": st.column_config.DateColumn(
                         "納品予定日",
                         help="納品の予定日",
-                        format="YYYY/MM/DD",
+                        format="MM/DD",
                     ),
                 },
                 use_container_width=True,
                 height=300,
                 hide_index=True
             )
-            total_amount = group['受注金額'].sum()
             total_outlook = group['見込売上額'].sum()
-            st.markdown(f"***合計受注金額: {total_amount:,.0f}***")
-            st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
+            st.markdown(f"**合計売上見込額: {total_outlook:,.0f}**")
 
 # --- メインアプリケーションの実行部分 ---
 def main():
