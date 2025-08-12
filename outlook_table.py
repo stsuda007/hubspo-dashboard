@@ -172,7 +172,7 @@ def display_pipeline_projects_table(df):
                     lambda x: f'{int(x):,}' if pd.notnull(x) else ''
                 )
             
-            st.dataframe(
+        st.dataframe(
                 group2_to_display,
                 column_config={
                     "受注目標日": st.column_config.DateColumn(
@@ -189,9 +189,9 @@ def display_pipeline_projects_table(df):
                 hide_index=True,
                 use_container_width=True,
                 height=300
-            )
-            total_outlook2 = group2['見込売上額'].sum()
-            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+        )
+        total_outlook2 = group2['見込売上額'].sum()
+        st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
 
     # --- 担当者ごとの表示 ---
     st.subheader("営業担当者別パイプライン")
