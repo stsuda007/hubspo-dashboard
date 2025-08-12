@@ -6,7 +6,17 @@ import time
 from datetime import datetime, timedelta
 from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
-st.set_page_config(layout="wide") # streamlitが画面いっぱいに使う
+st.set_page_config(
+    page_title="Hubspot Dashboard",
+    page_icon="🧊",
+    layout="wide",# streamlitが画面いっぱいに使う
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Under Construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
+        'Menu-2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
+        'About': "# This is a header. This is an *extremely* cool app!"
+    }
+)
 
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -250,7 +260,7 @@ def display_pipeline_projects_table(df):
 # --- メインアプリケーションの実行部分 ---
 def main():
     #st.title("HubSpot Deals ダッシュボード")
-    st.markdown(f'<h2 style="color:#33ff33;font-size:24px;">{"受注目標のある案件パイプライン"}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<h2 style="color:#444444;font-size:24px;">{"受注目標のある案件パイプライン"}</h1>', unsafe_allow_html=True)
     deals_df, stages_df, users_df = load_data_with_retry()
     if deals_df.empty or stages_df.empty or users_df.empty:
         st.error("データの読み込みに失敗したため、アプリケーションを停止します。")
