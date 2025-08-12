@@ -9,7 +9,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 st.set_page_config(layout="wide") # streamlitが画面いっぱいに使う
 
 # --- 認証 ---
-scope = ["https://spreadsheets.google.com/feeds", "httpss://www.googleapis.com/auth/drive"]
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
     credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
     creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
