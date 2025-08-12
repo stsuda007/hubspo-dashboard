@@ -110,6 +110,19 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     return merged_df
     
+# グループ化用の関数を定義　（今月・翌月・翌々月）
+def get_month_group(date):
+    if pd.isna(date):
+        return "その他"
+    
+    if date.year == today.year and date.month == today.month:
+        return "今月"
+    elif date.year == next_month.year and date.month == next_month.month:
+        return "来月"
+    elif date.year == two_months_later.year and date.month == two_months_later.month:
+        return "再来月"
+    else:
+        return "その他"
 # --- パイプライン案件テーブル表示関数（修正版） ---
 def display_pipeline_projects_table(df):
     """
@@ -188,6 +201,21 @@ def display_pipeline_projects_table(df):
             st.markdown(f"***合計受注金額: {total_amount:,.0f}***")
             st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
 
+    # '受注目標日_dt'列を使ってグルーピング用の新しい列を作成
+    display_df['Grouping Month'] = display_df['受注目標日_dt'].apply(get_month_group)
+
+    # 新しい列でデータをグループ化
+    grouped_by_month = display_df.groupby('Grouping Month')
+
+    # 各グループのデータを個別に表示
+    for name, group2 in grouped_by_month:
+        # st.expander を使って開閉可能なセクションを作成
+        with st.expander(f"{name}"):
+            # Streamlitでデータフレームを表示
+            st.dataframe(group2, use_container_width=True)
+            total_outlook2 = group2['見込売上額'].sum()
+            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+        
 # --- メインアプリケーションの実行部分 ---
 def main():
     """
