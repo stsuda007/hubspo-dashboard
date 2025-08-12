@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
+st.set_page_config(layout="wide") # streamlitが画面いっぱいに使う
 
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -163,7 +164,7 @@ def display_pipeline_projects_table(df):
 
     # 各グループのデータを個別に表示
     for name, group2 in sorted_groups:
-        with st.expander(f"{name}"):
+        with st.expander(f"{name} 売上見込額:{group2['見込売上額'].sum(),.0f}"):
             st.dataframe(
                 group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
                 use_container_width=True,
