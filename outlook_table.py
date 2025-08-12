@@ -87,7 +87,7 @@ def process_and_merge_data(deals_df, stages_df, users_df):
         pd.DataFrame: 処理・マージ済みのDataFrame。
     """
     # ユーザー名を作成
-    users_df["Full Name"] = users_df["First Name"].fillna("") + " " + users_df["Last Name"].fillna("")
+    users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
     users_df = users_df.rename(columns={"ID": "User ID"})
     
     # マージしやすいようにカラム名を変更
