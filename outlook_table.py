@@ -131,14 +131,15 @@ def display_pipeline_projects_table(df):
     )
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
-    # 各担当者のデータを個別に表示
-    for name, group in grouped_by_user:
-        with st.expander(f"営業担当者: {name}"):
-            st.dataframe(group.drop(columns=['受注目標日_dt', '納品予定日_dt']), use_container_width=True)
-            total_amount = group['受注金額'].sum()
-            total_outlook = group['見込売上額'].sum()
-            st.markdown(f"***合計受注金額: {total_amount:,.0f}***")
-            st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
+    # 担当者ごとの表示部分
+    with st.expander(f"営業担当者: {name}"):
+        st.dataframe(
+            group.drop(columns=['受注目標日_dt', '納品予定日_dt']), 
+            use_container_width=True, 
+            height=300 # 👈 この行を追加
+        )
+        total_outlook = group['見込売上額'].sum()
+        st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
 
     # --- 月ごとの表示 ---
     st.subheader("月別パイプライン")
@@ -164,13 +165,15 @@ def display_pipeline_projects_table(df):
 
     # 新しい列でデータをグループ化
     grouped_by_month = display_df.groupby('Grouping Month')
-    
-    # 各グループのデータを個別に表示
-    for name, group2 in grouped_by_month:
-        with st.expander(f"{name}"):
-            st.dataframe(group2.drop(columns=['受注目標日_dt', '納品予定日_dt']), use_container_width=True)
-            total_outlook2 = group2['見込売上額'].sum()
-            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+    # 月ごとの表示部分
+    with st.expander(f"{name}"):
+        st.dataframe(
+            group2.drop(columns=['受注目標日_dt', '納品予定日_dt']), 
+            use_container_width=True, 
+            height=300 # 👈 この行を追加
+    )
+    total_outlook2 = group2['見込売上額'].sum()
+    st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
             
 # --- メインアプリケーションの実行部分 ---
 def main():
