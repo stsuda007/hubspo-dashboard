@@ -192,7 +192,7 @@ def display_pipeline_projects_table(df):
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
     for name, group in grouped_by_user:
-        with st.expander(f"営業担当者: {name} 案件数:{grouped_by_user.len()}"):
+        with st.expander(f"営業担当者: {name} 案件数:{group.shape[0]}"):
             st.dataframe(
                 group.drop(columns=['Grouping Month']),
                 column_config={
