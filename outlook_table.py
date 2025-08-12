@@ -164,7 +164,7 @@ def display_pipeline_projects_table(df):
 
     # 各グループのデータを個別に表示
     for name, group2 in sorted_groups:
-        with st.expander(f"{name}  売上見込額:{(group2['見込売上額'].sum(),.0f)}"):
+        with st.expander(f"{name} 売上見込額:{(group2['見込売上額'].sum(),.0f)}"):
             st.dataframe(
                 group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
                 use_container_width=True,
