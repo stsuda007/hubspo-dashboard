@@ -165,7 +165,7 @@ def display_pipeline_projects_table(df):
                 ).copy()
                 # 表示用のデータフレームを準備
                 # 元の display_df の列順序を使用し、不要な列を削除
-                group2_to_display = group2.copy()
+                group2_to_display = sourted_group2.copy()
         
                 # 不要な列を削除
                 group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
