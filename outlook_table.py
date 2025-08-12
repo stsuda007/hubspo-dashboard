@@ -157,12 +157,20 @@ def display_pipeline_projects_table(df):
     # 各グループのデータを個別に表示
     for name, group2 in sorted_groups:
         with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
-            # 表示するカラムを再定義して、不要なカラムを削除
-            group2_to_display = group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
-            # 見込売上額列をカンマ区切りでフォーマット
-            group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
-                lambda x: f'{x:,.0f}' if pd.notnull(x) else ''
-            )
+                # 表示用のデータフレームを準備
+                # 元の display_df の列順序を使用し、不要な列を削除
+                group2_to_display = group2.copy()
+        
+                # 不要な列を削除
+                group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
+        
+                # `受注金額` と `見込売上額` の列を文字列としてフォーマット
+                group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
+                    lambda x: f'{int(x):,}' if pd.notnull(x) else ''
+                )
+                group2_to_display['受注金額'] = group2_to_display['受注金額'].apply(
+                    lambda x: f'{int(x):,}' if pd.notnull(x) else ''
+                )
             
             st.dataframe(
                 group2_to_display,
