@@ -12,11 +12,6 @@ st.set_page_config(
     page_icon="🧊",
     layout="wide",# streamlitが画面いっぱいに使う
     initial_sidebar_state="expanded",
-    menu_items={
-        'under_construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
-        'menu_2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
-        'about': "# This is a header. This is an *extremely* cool app!"
-    }
 )
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
