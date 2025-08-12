@@ -190,8 +190,8 @@ def display_pipeline_projects_table(df):
     
     # 担当者ごとのソートとグループ化
     sorted_by_user_df = display_df.sort_values(
-        by=['営業担当者', '受注目標日_dt', '受注金額'], 
-        ascending=[True, True, False],
+        by=['営業担当者', '受注目標日_dt'], 
+        ascending=[True, True],
         na_position='last'
     )
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
