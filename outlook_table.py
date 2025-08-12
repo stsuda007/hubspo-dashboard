@@ -101,7 +101,7 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     # 受注金額と見込売上額から通貨記号やカンマを除去し、数値に変換
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
-    deals_df['見込売上額'] = deals_df['見込売上金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
+    deals_df['見込売上額'] = deals_df['見込売上額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["見込売上額"] = pd.to_numeric(deals_df["見込売上額"], errors="coerce")
     
     # 複数DataFrameをマージ
