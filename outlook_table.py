@@ -109,11 +109,10 @@ def display_pipeline_projects_table(df):
     cols_to_display = [
         '営業担当者',
         '案件名',
+        '見込売上額',
         '受注目標日_dt',
         '納品予定日_dt',
-        'フェーズ',
-        '見込売上額',
-        '受注金額'
+        'フェーズ'
     ]
     display_df = display_df[cols_to_display]
 
@@ -166,10 +165,31 @@ def display_pipeline_projects_table(df):
     for name, group2 in sorted_groups:
         with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
             st.dataframe(
-                group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
-                use_container_width=True,
-                height=300
+                df,
+                column_config={
+                    "見込売上額": st.column_config.NumberColumn(
+                    "見込売上額",
+                    help="案件の予想売上金額",
+                    format="¥%d,",
+                    ),
+                "受注目標日": st.column_config.DateColumn(
+                    "受注目標日",
+                    help="受注の目標日",
+                    format="MM/DD",
+                    ),
+                "納品予定日": st.column_config.DateColumn(
+                    "納品予定日",
+                    help="納品の予定日",
+                    format="MM/DD",
+                    ),
+                },
+                hide_index=True
             )
+            #st.dataframe(
+            #    group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
+            #    use_container_width=True,
+            #    height=300
+            #)
             total_outlook2 = group2['見込売上額'].sum()
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
         
