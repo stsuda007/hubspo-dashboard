@@ -12,9 +12,9 @@ st.set_page_config(
     layout="wide",# streamlitが画面いっぱいに使う
     initial_sidebar_state="expanded",
     menu_items={
-        'Under Construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
-        'Menu-2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
-        'About': "# This is a header. This is an *extremely* cool app!"
+        'Under_Construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
+        'Menu_2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
+        'About': '# This is a header. This is an *extremely* cool app!'
     }
 )
 
