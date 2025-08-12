@@ -17,9 +17,15 @@ try:
 except KeyError:
     st.error("Googleサービスアカウントの認証情報が設定されていません。`st.secrets`に`GOOGLE_SERVICE_ACCOUNT`を設定してください。")
     st.stop()
+# ハードコードされたスプレッドシートキーを、st.secretsから読み込むように変更
+try:
+    SPREADSHEET_KEY = st.secrets["SPREADSHEET_KEY"]
+except KeyError:
+    st.error("Google Sheetsのスプレッドシートキーが設定されていません。`st.secrets`に`SPREADSHEET_KEY`を設定してください。")
+    st.stop()
 
 # --- 定数 ---
-SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
+#SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
@@ -87,7 +93,7 @@ def display_pipeline_projects_table(df):
     """
     パイプライン案件の一覧をテーブルとして表示する。
     """
-    st.subheader("パイプライン案件一覧")
+    #st.subheader("パイプライン案件一覧")
 
     # 日付列をdatetime型に変換
     df['受注目標日_dt'] = pd.to_datetime(df['受注目標日'], errors='coerce')
@@ -243,7 +249,8 @@ def display_pipeline_projects_table(df):
 
 # --- メインアプリケーションの実行部分 ---
 def main():
-    st.title("HubSpot Deals ダッシュボード")
+    #st.title("HubSpot Deals ダッシュボード")
+    st.markdown(f'<h2 style="color:#33ff33;font-size:24px;">{"受注目標のある案件パイプライン"}</h1>', unsafe_allow_html=True)
     deals_df, stages_df, users_df = load_data_with_retry()
     if deals_df.empty or stages_df.empty or users_df.empty:
         st.error("データの読み込みに失敗したため、アプリケーションを停止します。")
