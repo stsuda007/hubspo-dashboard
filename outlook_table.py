@@ -182,8 +182,8 @@ def display_pipeline_projects_table(df):
                 },
                 hide_index=True,
                 use_container_width=True,
-                height=300,
-                hide_columns=['見込売上額', '受注金額']
+                height=300
+                #hide_columns=['見込売上額', '受注金額']
             )
             # st.markdownの表示もカンマ区切りで表示
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
