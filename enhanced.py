@@ -47,7 +47,7 @@ def load_data_with_retry(max_retries=3, delay=5):
             users_ws = gc.open_by_key(SPREADSHEET_KEY).worksheet(USERS_SHEET)
 
             deals_data = pd.DataFrame(deals_ws.get_all_records())
-            stages_data = pd.DataFrame(stages_ws.get("A2:B12"), columns=["Stage ID", "Stage Name"])
+            stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage ID", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
             return deals_data, stages_data, users_data
 
@@ -70,7 +70,7 @@ if deals_df.empty or stages_df.empty or users_df.empty:
     st.stop()
 
 # --- Data preprocessing ---
-users_df["Full Name"] = users_df["First Name"].fillna("") + " " + users_df["Last Name"].fillna("")
+users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
 users_df = users_df.rename(columns={"ID": "User ID"})
 deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
 
@@ -81,14 +81,14 @@ stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
 
 deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
 deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
-deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(int)
+#deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0).astype(int)
 
 # Merge dataframes
 merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
 # Convert date columns to datetime objects
-date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date']
+date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date','活動提案アクション', '実施予定日','Close Date', '現地デモ実施日', '営業引継ぎ日', '撮像/解析完了日', '撮影日', '失注日', 'Snapshot_Date', '治具手配日', '検証_開始日']
 for col in date_columns:
     if col in merged_df.columns:
         merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce')
