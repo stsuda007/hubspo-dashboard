@@ -143,7 +143,7 @@ def display_pipeline_projects_table(df):
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
     for name, group2 in sorted_groups:
-        with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
+        with st.expander(f"{name} ー 売上見込額: {group2['見込売上額'].sum():,.0f}"):
             sorted_group2 = group2.sort_values(
                 by='受注目標日_dt',
                 ascending=True,
@@ -192,7 +192,7 @@ def display_pipeline_projects_table(df):
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
     for name, group in grouped_by_user:
-        with st.expander(f"営業担当者: {name} 案件数:{group.shape[0]}"):
+        with st.expander(f"{name} ー 案件数:{group.shape[0]}"):
             st.dataframe(
                 group.drop(columns=['Grouping Month']),
                 column_config={
@@ -221,8 +221,9 @@ def display_pipeline_projects_table(df):
                 height=300,
                 hide_index=True
             )
+            total_sum = group['受注金額'].sum()
             total_outlook = group['見込売上額'].sum()
-            st.markdown(f"**合計売上見込額: {total_outlook:,.0f}**")
+            st.markdown(f"**合計受注金額: {total_sum:,0f}　合計売上見込額: {total_outlook:,.0f}**")
 
 # --- メインアプリケーションの実行部分 ---
 def main():
