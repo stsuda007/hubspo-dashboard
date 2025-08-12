@@ -60,21 +60,21 @@ def load_data_with_retry(max_retries=3, delay=5):
 def process_and_merge_data(deals_df, stages_df, users_df):
     users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
     users_df = users_df.rename(columns={"ID": "User ID"})
-    
+
     deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
 
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
     deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
     stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
-    
+
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
     deals_df['見込売上額'] = deals_df['見込売上額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["見込売上額"] = pd.to_numeric(deals_df["見込売上額"], errors="coerce")
-    
+
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
-    
+
     return merged_df
 
 # --- パイプライン案件テーブル表示関数 ---
@@ -105,27 +105,20 @@ def display_pipeline_projects_table(df):
         'Stage Name': 'フェーズ'
     })
 
-    # 表示するカラムを選択
+    # `cols_to_display`で列の順序を統一
     cols_to_display = [
         '営業担当者',
         '案件名',
-        '受注目標日',
-        '納品予定日',
+        '受注目標日_dt',
+        '納品予定日_dt',
         '見込売上額',
         'フェーズ',
         '受注金額'
     ]
     display_df = display_df[cols_to_display]
 
-    # 日付列を'YYYY-MM-DD'形式の文字列に変換
-    display_df['受注目標日'] = display_df['受注目標日_dt'].dt.strftime('%Y-%m-%d').fillna('')
-    display_df['納品予定日'] = display_df['納品予定日_dt'].dt.strftime('%Y-%m-%d').fillna('')
-
     # --- 月ごとの表示 ---
     st.subheader("月別パイプライン")
-
-    # 月ごとのグルーピングロジック
-    # (この部分はそのまま)
     next_month = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
     two_months_later = (today.replace(day=1) + timedelta(days=62)).replace(day=1)
 
@@ -141,102 +134,91 @@ def display_pipeline_projects_table(df):
         else:
             return "その他"
 
-    # '受注目標日_dt'列を使ってグルーピング用の新しい列を作成
     display_df['Grouping Month'] = display_df['受注目標日_dt'].apply(get_month_group)
-
-    # 新しい列でデータをグループ化
     grouped_by_month = display_df.groupby('Grouping Month')
-
-    # カスタムソート順を定義
     current_month_name = f"{today.month}月"
     next_month_name = f"{next_month.month}月"
     two_months_later_name = f"{two_months_later.month}月"
     custom_order = [current_month_name, next_month_name, two_months_later_name, "その他"]
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
-    # 各グループのデータを個別に表示
     for name, group2 in sorted_groups:
         with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
-                # ✅ ソート処理を追加
-                sorted_group2 = group2.sort_values(
-                    by='受注目標日_dt',
-                    ascending=True,
-                    na_position='last'
-                ).copy()
-                # 表示用のデータフレームを準備
-                # 元の display_df の列順序を使用し、不要な列を削除
-                group2_to_display = sorted_group2.copy()
-        
-                # 不要な列を削除
-                group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
-        
-                # `受注金額` と `見込売上額` の列を文字列としてフォーマット
-                group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
-                    lambda x: f'{int(x):,}' if pd.notnull(x) else ''
-                )
-                group2_to_display['受注金額'] = group2_to_display['受注金額'].apply(
-                    lambda x: f'{int(x):,}' if pd.notnull(x) else ''
-                )
+            sorted_group2 = group2.sort_values(
+                by='受注目標日_dt',
+                ascending=True,
+                na_position='last'
+            ).copy()
             
-        st.dataframe(
-                group2_to_display,
+            st.dataframe(
+                sorted_group2.drop(columns=['Grouping Month']),
                 column_config={
-                    "受注目標日": st.column_config.DateColumn(
+                    "見込売上額": st.column_config.NumberColumn(
+                        "見込売上額",
+                        help="案件の予想売上金額",
+                        format="%,d"
+                    ),
+                    "受注金額": st.column_config.NumberColumn(
+                        "受注金額",
+                        help="受注が確定した金額",
+                        format="%,d"
+                    ),
+                    "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
                         help="受注の目標日",
-                        format="MM/DD",
+                        format="YYYY/MM/DD",
                     ),
-                    "納品予定日": st.column_config.DateColumn(
+                    "納品予定日_dt": st.column_config.DateColumn(
                         "納品予定日",
                         help="納品の予定日",
-                        format="MM/DD",
+                        format="YYYY/MM/DD",
                     ),
                 },
                 hide_index=True,
                 use_container_width=True,
                 height=300
-        )
-        total_outlook2 = group2['見込売上額'].sum()
-        st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+            )
+            total_outlook2 = group2['見込売上額'].sum()
+            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
 
     # --- 担当者ごとの表示 ---
     st.subheader("営業担当者別パイプライン")
-    
-    # 担当者ごとのソートとグループ化
+
     sorted_by_user_df = display_df.sort_values(
-        by=['営業担当者', '受注目標日_dt'], 
+        by=['営業担当者', '受注目標日_dt'],
         ascending=[True, True],
         na_position='last'
     )
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
-    # 各担当者のデータを個別に表示
     for name, group in grouped_by_user:
         with st.expander(f"営業担当者: {name}"):
-            # 表示するカラムを再定義して、不要なカラムを削除
-            group_to_display = group.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
-            
             st.dataframe(
-                group_to_display, 
-                use_container_width=True, 
-                height=300,
+                group.drop(columns=['Grouping Month']),
                 column_config={
                     "見込売上額": st.column_config.NumberColumn(
                         "見込売上額",
                         help="案件の予想売上金額",
-                        format="%,d", # この行を修正
+                        format="%,d"
                     ),
-                    "受注目標日": st.column_config.DateColumn(
+                    "受注金額": st.column_config.NumberColumn(
+                        "受注金額",
+                        help="受注が確定した金額",
+                        format="%,d"
+                    ),
+                    "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
                         help="受注の目標日",
-                        format="MM/DD",
+                        format="YYYY/MM/DD",
                     ),
-                    "納品予定日": st.column_config.DateColumn(
+                    "納品予定日_dt": st.column_config.DateColumn(
                         "納品予定日",
                         help="納品の予定日",
-                        format="MM/DD",
+                        format="YYYY/MM/DD",
                     ),
                 },
+                use_container_width=True,
+                height=300,
                 hide_index=True
             )
             total_amount = group['受注金額'].sum()
@@ -247,15 +229,12 @@ def display_pipeline_projects_table(df):
 # --- メインアプリケーションの実行部分 ---
 def main():
     st.title("HubSpot Deals ダッシュボード")
-
     deals_df, stages_df, users_df = load_data_with_retry()
     if deals_df.empty or stages_df.empty or users_df.empty:
         st.error("データの読み込みに失敗したため、アプリケーションを停止します。")
         st.stop()
-
     merged_df = process_and_merge_data(deals_df, stages_df, users_df)
-
     display_pipeline_projects_table(merged_df)
 
 if __name__ == "__main__":
-    main()            
+    main()
