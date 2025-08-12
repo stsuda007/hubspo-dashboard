@@ -119,7 +119,7 @@ def display_pipeline_projects_table(df):
         '見込売上額（円）',
         '受注金額（円）',
         'フェーズ',
-        #'見込売上額', # 元の金額列
+        '見込売上額', # 元の金額列
         '受注金額' # 元の金額列
     ]
     display_df = display_df[cols_to_display]
