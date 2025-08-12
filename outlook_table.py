@@ -9,7 +9,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 st.set_page_config(layout="wide") # streamlitが画面いっぱいに使う
 
 # --- 認証 ---
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+scope = ["httpss://spreadsheets.google.com/feeds", "httpss://www.googleapis.com/auth/drive"]
 try:
     credentials_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
     creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
@@ -60,24 +60,26 @@ def load_data_with_retry(max_retries=3, delay=5):
 def process_and_merge_data(deals_df, stages_df, users_df):
     users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
     users_df = users_df.rename(columns={"ID": "User ID"})
-
+    
     deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
 
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
     deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
     stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
-
+    
+    # 金額カラムの前処理を強化
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
     deals_df['見込売上額'] = deals_df['見込売上額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["見込売上額"] = pd.to_numeric(deals_df["見込売上額"], errors="coerce")
-    # カンマ区切りの列を生成 ---
+    
+    # データ処理関数内でカンマ区切りの列を生成
     deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
     deals_df['受注金額（円）'] = deals_df['受注金額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
-
+    
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
-
+    
     return merged_df
 
 # --- パイプライン案件テーブル表示関数 ---
@@ -98,7 +100,7 @@ def display_pipeline_projects_table(df):
     # フィルタリング: 受注目標日または納品予定日が今月以降の案件
     df_pipeline = df[(df['受注目標日_dt'] >= first_day_of_current_month) | (df['納品予定日_dt'] >= first_day_of_current_month)].copy()
     if df_pipeline.empty:
-        st.info("今月の受注目標日または納品予定日が記載されている案件がありません。")
+        st.info("今月以降の受注目標日または納品予定日が記載されている案件がありません。")
         return
 
     # 表示用にカラム名を変更
@@ -115,8 +117,10 @@ def display_pipeline_projects_table(df):
         '受注目標日_dt',
         '納品予定日_dt',
         '見込売上額（円）',
-        '受注金額',
-        'フェーズ' 
+        '受注金額（円）',
+        'フェーズ',
+        '見込売上額', # 元の金額列
+        '受注金額', # 元の金額列
     ]
     display_df = display_df[cols_to_display]
 
@@ -146,7 +150,8 @@ def display_pipeline_projects_table(df):
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
     for name, group2 in sorted_groups:
-        with st.expander(f"{name} ー 売上見込額: {group2['見込売上額'].sum():,.0f}"):
+        total_outlook2 = group2['見込売上額'].sum()
+        with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
             sorted_group2 = group2.sort_values(
                 by='受注目標日_dt',
                 ascending=True,
@@ -159,6 +164,10 @@ def display_pipeline_projects_table(df):
                     "見込売上額（円）": st.column_config.TextColumn(
                         "見込売上額",
                         help="案件の予想売上金額"
+                    ),
+                    "受注金額（円）": st.column_config.TextColumn(
+                        "受注金額",
+                        help="受注が確定した金額"
                     ),
                     "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
@@ -173,14 +182,16 @@ def display_pipeline_projects_table(df):
                 },
                 hide_index=True,
                 use_container_width=True,
-                height=300
+                height=300,
+                hide_columns=['見込売上額', '受注金額']
             )
-            total_outlook2 = group2['見込売上額'].sum()
+            # st.markdownの表示もカンマ区切りで表示
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
 
     # --- 担当者ごとの表示 ---
     st.subheader("営業担当者別パイプライン")
-
+    
+    # 担当者ごとのソートとグループ化
     sorted_by_user_df = display_df.sort_values(
         by=['営業担当者', '受注目標日_dt'],
         ascending=[True, True],
@@ -188,6 +199,7 @@ def display_pipeline_projects_table(df):
     )
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
 
+    # 各担当者のデータを個別に表示
     for name, group in grouped_by_user:
         with st.expander(f"{name} ー 案件数:{group.shape[0]}"):
             st.dataframe(
@@ -197,10 +209,9 @@ def display_pipeline_projects_table(df):
                         "見込売上額",
                         help="案件の予想売上金額"
                     ),
-                    "受注金額": st.column_config.NumberColumn(
+                    "受注金額（円）": st.column_config.TextColumn(
                         "受注金額",
-                        help="受注が確定した金額",
-                        format="%,d"
+                        help="受注が確定した金額"
                     ),
                     "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
@@ -215,11 +226,12 @@ def display_pipeline_projects_table(df):
                 },
                 use_container_width=True,
                 height=300,
-                hide_index=True
+                hide_index=True,
+                hide_columns=['見込売上額', '受注金額']
             )
             total_sum = group['受注金額'].sum()
             total_outlook = group['見込売上額'].sum()
-            st.markdown(f"**合計受注金額: {total_sum:,0f}　合計売上見込額: {total_outlook:,.0f}**")
+            st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
 
 # --- メインアプリケーションの実行部分 ---
 def main():
