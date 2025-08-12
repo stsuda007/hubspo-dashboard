@@ -90,12 +90,12 @@ def display_pipeline_projects_table(df):
 
     # 現在の日付を取得
     today = datetime.now()
+    first_day_of_current_month = today.replace(day=1)
 
-    # フィルタリング: 受注目標日が未来の案件、または納品予定日が未来の案件
-    df_pipeline = df[(df['受注目標日_dt'] > today) | (df['納品予定日_dt'] > today)].copy()
-
+    # フィルタリング: 受注目標日または納品予定日が今月以降の案件
+    df_pipeline = df[(df['受注目標日_dt'] >= first_day_of_current_month) | (df['納品予定日_dt'] >= first_day_of_current_month)].copy()
     if df_pipeline.empty:
-        st.info("未来の受注目標日または納品予定日が記載されている案件がありません。")
+        st.info("今月の受注目標日または納品予定日が記載されている案件がありません。")
         return
 
     # 表示用にカラム名を変更
