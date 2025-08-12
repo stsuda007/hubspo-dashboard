@@ -21,10 +21,14 @@ try:
 except KeyError:
     st.error("Googleサービスアカウントの認証情報が設定されていません。`st.secrets`に`GOOGLE_SERVICE_ACCOUNT`を設定してください。")
     st.stop()
-
+# ハードコードされたスプレッドシートキーを、st.secretsから読み込むように変更
+try:
+    SPREADSHEET_KEY = st.secrets["SPREADSHEET_KEY"]
+except KeyError:
+    st.error("Google Sheetsのスプレッドシートキーが設定されていません。`st.secrets`に`SPREADSHEET_KEY`を設定してください。")
+    st.stop()
 
 # --- Spreadsheet settings ---
-SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
@@ -94,9 +98,11 @@ for col in date_columns:
 st.sidebar.header("フィルタ")
 
 # 案件ステータスの選択
-deal_status_options = ["すべて"] + list(merged_df["受注/失注"].unique())
-selected_deal_status = st.sidebar.selectbox("案件ステータス", deal_status_options)
-
+deal_status_options = ["すべて"] + list(merged_df["Pipeline (name)"].unique())
+selected_deal_status = st.sidebar.selectbox("パイプライン", deal_status_options)
+# リードの選択
+lead_options = ["すべて"] + list(merged_df["リード経路"].unique())
+selected_deal_status = st.sidebar.selectbox("リード", deal_status_options)
 # 営業担当者の選択
 sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
 selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_options, default=["すべて"])
@@ -120,18 +126,13 @@ if selected_deal_status != "すべて":
 
 if "すべて" not in selected_sales_reps:
     filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
-
-filtered_df = filtered_df[(filtered_df["Create Date"].dt.date >= start_date) & (filtered_df["Create Date"].dt.date <= end_date)]
-
+# Snapshot_Dateには案件ごとの最新更新日が格納されているので、その日にちでフィルタ
+filtered_df = filtered_df[(filtered_df["Snapshot_Date"].dt.date >= start_date) & (filtered_df["Snapshot_Date"].dt.date <= end_date)]
 
 # --- KPI Section ---
-def display_kpis(df):
-    """
-    Calculates and displays Key Performance Indicators (KPIs).
-    """
+def display_kpis(df):#KPIセクション
     st.subheader("主要KPI")
     won_deals_df = df[df['受注/失注'] == '受注'].copy()
-    
     total_won_value = won_deals_df["受注金額"].sum()
     num_won_deals = len(won_deals_df)
 
@@ -323,7 +324,7 @@ def create_pipeline_chart(df):
     st.plotly_chart(fig, use_container_width=True)
 
 # --- Main app layout ---
-st.title("HubSpot Deals ダッシュボード")
+st.title("ダッシュボード")
 
 # KPIセクション
 display_kpis(filtered_df)
