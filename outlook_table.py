@@ -6,18 +6,18 @@ import time
 from datetime import datetime, timedelta
 from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
+# --- Streamlitページの基本設定 ---
 st.set_page_config(
     page_title="Hubspot Dashboard",
     page_icon="🧊",
     layout="wide",# streamlitが画面いっぱいに使う
     initial_sidebar_state="expanded",
     menu_items={
-        'Under_Construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
-        'Menu_2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
-        'About': '# This is a header. This is an *extremely* cool app!'
+        'under_construction': 'https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/',
+        'menu_2': "https://appspo-dashboard-wvlcv5imdrc8mo8o3aswnp.streamlit.app/",
+        'About': "# This is a header. This is an *extremely* cool app!"
     }
 )
-
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
