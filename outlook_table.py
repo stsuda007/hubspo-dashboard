@@ -128,6 +128,7 @@ def display_pipeline_projects_table(df):
     st.subheader("月別パイプライン")
     next_month = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
     two_months_later = (today.replace(day=1) + timedelta(days=62)).replace(day=1)
+    three_months_later = (today.replace(day=1) + timedelta(days=93)).replace(day=1)
 
     def get_month_group(date):
         if pd.isna(date):
@@ -138,6 +139,8 @@ def display_pipeline_projects_table(df):
             return f"{next_month.month}月"
         elif date.year == two_months_later.year and date.month == two_months_later.month:
             return f"{two_months_later.month}月"
+        elif date.year == three_months_later.year and date.month == three_months_later.month:
+            return f"{three_months_later.month}月"
         else:
             return "その他"
 
@@ -146,7 +149,8 @@ def display_pipeline_projects_table(df):
     current_month_name = f"{today.month}月"
     next_month_name = f"{next_month.month}月"
     two_months_later_name = f"{two_months_later.month}月"
-    custom_order = [current_month_name, next_month_name, two_months_later_name, "その他"]
+    three_months_later_name = f"{three_months_later.month}月"
+    custom_order = [current_month_name, next_month_name, two_months_later_name, three_months_later_name, "その他"]
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
     # 表示する列の順序を定義
