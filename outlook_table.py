@@ -246,18 +246,3 @@ def main():
 
 if __name__ == "__main__":
     main()            
-# --- メインアプリケーションの実行部分 ---
-def main():
-    st.title("HubSpot Deals ダッシュボード")
-
-    deals_df, stages_df, users_df = load_data_with_retry()
-    if deals_df.empty or stages_df.empty or users_df.empty:
-        st.error("データの読み込みに失敗したため、アプリケーションを停止します。")
-        st.stop()
-
-    merged_df = process_and_merge_data(deals_df, stages_df, users_df)
-
-    display_pipeline_projects_table(merged_df)
-
-if __name__ == "__main__":
-    main()
