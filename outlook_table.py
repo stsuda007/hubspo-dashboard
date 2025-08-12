@@ -184,7 +184,7 @@ def display_pipeline_projects_table(df):
                 },
                 hide_index=True,
                 use_container_width=True,
-                height=300
+                height=300,
                 #hide_columns=['見込売上額', '受注金額']
                 column_order=display_columns # ここに column_order を追加
             )
@@ -229,7 +229,7 @@ def display_pipeline_projects_table(df):
                 },
                 use_container_width=True,
                 height=300,
-                hide_index=True
+                hide_index=True,
                 #hide_columns=['見込売上額', '受注金額']
                 column_order=display_columns # ここに column_order を追加
             )
