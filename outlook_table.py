@@ -149,6 +149,8 @@ def display_pipeline_projects_table(df):
     custom_order = [current_month_name, next_month_name, two_months_later_name, "その他"]
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
+    # 表示する列の順序を定義
+    display_columns = ('営業担当者', '案件名', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
     for name, group2 in sorted_groups:
         total_outlook2 = group2['見込売上額'].sum()
         with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
@@ -184,6 +186,7 @@ def display_pipeline_projects_table(df):
                 use_container_width=True,
                 height=300
                 #hide_columns=['見込売上額', '受注金額']
+                column_order=display_columns # ここに column_order を追加
             )
             # st.markdownの表示もカンマ区切りで表示
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
@@ -228,6 +231,7 @@ def display_pipeline_projects_table(df):
                 height=300,
                 hide_index=True
                 #hide_columns=['見込売上額', '受注金額']
+                column_order=display_columns # ここに column_order を追加
             )
             total_sum = group['受注金額'].sum()
             total_outlook = group['見込売上額'].sum()
