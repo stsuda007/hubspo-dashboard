@@ -109,8 +109,8 @@ def display_pipeline_projects_table(df):
     cols_to_display = [
         '営業担当者',
         '案件名',
-        '受注目標日_dt',
-        '納品予定日_dt',
+        '受注目標日',
+        '納品予定日',
         '見込売上額',
         'フェーズ',
         '受注金額'
@@ -157,12 +157,18 @@ def display_pipeline_projects_table(df):
     # 各グループのデータを個別に表示
     for name, group2 in sorted_groups:
         with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
+                # ✅ ソート処理を追加
+                sorted_group2 = group2.sort_values(
+                    by='受注目標日_dt',
+                    ascending=True,
+                    na_position='last'
+                ).copy()
                 # 表示用のデータフレームを準備
                 # 元の display_df の列順序を使用し、不要な列を削除
                 group2_to_display = group2.copy()
         
                 # 不要な列を削除
-                #group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
+                group2_to_display = group2_to_display.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
         
                 # `受注金額` と `見込売上額` の列を文字列としてフォーマット
                 group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
