@@ -112,7 +112,8 @@ def display_pipeline_projects_table(df):
         '見込売上額',
         '受注目標日_dt',
         '納品予定日_dt',
-        'フェーズ'
+        'フェーズ',
+        '受注金額'
     ]
     display_df = display_df[cols_to_display]
 
