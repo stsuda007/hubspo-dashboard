@@ -71,6 +71,9 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
     deals_df['見込売上額'] = deals_df['見込売上額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["見込売上額"] = pd.to_numeric(deals_df["見込売上額"], errors="coerce")
+    # カンマ区切りの列を生成 ---
+    deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
+    deals_df['受注金額（円）'] = deals_df['受注金額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
 
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
@@ -111,9 +114,9 @@ def display_pipeline_projects_table(df):
         '案件名',
         '受注目標日_dt',
         '納品予定日_dt',
-        '見込売上額',
-        'フェーズ',
+        '見込売上額（円）',
         '受注金額'
+        'フェーズ' 
     ]
     display_df = display_df[cols_to_display]
 
@@ -153,15 +156,9 @@ def display_pipeline_projects_table(df):
             st.dataframe(
                 sorted_group2.drop(columns=['Grouping Month']),
                 column_config={
-                    "見込売上額": st.column_config.NumberColumn(
+                    "見込売上額（円）": st.column_config.TextColumn(
                         "見込売上額",
-                        help="案件の予想売上金額",
-                        format="%,d"
-                    ),
-                    "受注金額": st.column_config.NumberColumn(
-                        "受注金額",
-                        help="受注が確定した金額",
-                        format="%,d"
+                        help="案件の予想売上金額"
                     ),
                     "受注目標日_dt": st.column_config.DateColumn(
                         "受注目標日",
@@ -196,10 +193,9 @@ def display_pipeline_projects_table(df):
             st.dataframe(
                 group.drop(columns=['Grouping Month']),
                 column_config={
-                    "見込売上額": st.column_config.NumberColumn(
+                    "見込売上額（円）": st.column_config.TextColumn(
                         "見込売上額",
-                        help="案件の予想売上金額",
-                        format="%,d"
+                        help="案件の予想売上金額"
                     ),
                     "受注金額": st.column_config.NumberColumn(
                         "受注金額",
