@@ -30,7 +30,6 @@ except KeyError:
     st.stop()
 
 # --- 定数 ---
-#SPREADSHEET_KEY = "1Ra_tPm2u5K4ikxacw1vdQqY_YQg-JekMsM-ZhaaVFKg"
 DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
