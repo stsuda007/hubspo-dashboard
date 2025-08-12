@@ -119,6 +119,59 @@ def display_pipeline_projects_table(df):
     # 日付列を'YYYY-MM-DD'形式の文字列に変換
     display_df['受注目標日'] = display_df['受注目標日_dt'].dt.strftime('%Y-%m-%d').fillna('')
     display_df['納品予定日'] = display_df['納品予定日_dt'].dt.strftime('%Y-%m-%d').fillna('')
+
+    # --- 月ごとの表示 ---
+    st.subheader("月別パイプライン")
+
+    # 月ごとのグルーピングロジック
+    today = datetime.now()
+    next_month = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
+    two_months_later = (today.replace(day=1) + timedelta(days=62)).replace(day=1)
+
+    def get_month_group(date):
+        if pd.isna(date):
+            return "その他"
+        if date.year == today.year and date.month == today.month:
+            # 今月の月名を日本語で返す
+            return f"{today.month}月"
+        elif date.year == next_month.year and date.month == next_month.month:
+            # 来月の月名を日本語で返す
+            return f"{next_month.month}月"
+        elif date.year == two_months_later.year and date.month == two_months_later.month:
+            # 再来月の月名を日本語で返す
+            return f"{two_months_later.month}月"
+        else:
+            return "その他"
+
+    # '受注目標日_dt'列を使ってグルーピング用の新しい列を作成
+    display_df['Grouping Month'] = display_df['受注目標日_dt'].apply(get_month_group)
+
+    # 新しい列でデータをグループ化
+    grouped_by_month = display_df.groupby('Grouping Month')
+
+    # ソート順を定義（月名の昇順、「その他」を最後）
+    month_order = [f"{m}月" for m in range(1, 13)]
+    month_order.append("その他")
+    # 現在の月に合わせて動的な順序を作成
+    current_month_name = f"{today.month}月"
+    next_month_name = f"{next_month.month}月"
+    two_months_later_name = f"{two_months_later.month}月"
+    custom_order = [current_month_name, next_month_name, two_months_later_name, "その他"]
+
+    # グループを定義したカスタム順序でソート
+    sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
+
+    # 各グループのデータを個別に表示
+    for name, group2 in sorted_groups:
+        with st.expander(f"{name}"):
+            st.dataframe(
+                group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
+                use_container_width=True,
+                height=300
+            )
+            total_outlook2 = group2['見込売上額'].sum()
+            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+        
     
     # --- 担当者ごとの表示 ---
     st.subheader("営業担当者別パイプライン")
