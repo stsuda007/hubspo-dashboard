@@ -159,6 +159,10 @@ def display_pipeline_projects_table(df):
         with st.expander(f"{name} 売上見込額: {group2['見込売上額'].sum():,.0f}"):
             # 表示するカラムを再定義して、不要なカラムを削除
             group2_to_display = group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month'])
+            # 見込売上額列をカンマ区切りでフォーマット
+            group2_to_display['見込売上額'] = group2_to_display['見込売上額'].apply(
+                lambda x: f'{x:,.0f}' if pd.notnull(x) else ''
+            )
             
             st.dataframe(
                 group2_to_display,
@@ -166,7 +170,6 @@ def display_pipeline_projects_table(df):
                     "見込売上額": st.column_config.NumberColumn(
                         "見込売上額",
                         help="案件の予想売上金額",
-                        format="%,d", # この行を修正
                     ),
                     "受注目標日": st.column_config.DateColumn(
                         "受注目標日",
