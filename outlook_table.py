@@ -110,19 +110,6 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     return merged_df
     
-# グループ化用の関数を定義　（今月・翌月・翌々月）
-def get_month_group(date):
-    if pd.isna(date):
-        return "その他"
-    
-    if date.year == today.year and date.month == today.month:
-        return "今月"
-    elif date.year == next_month.year and date.month == next_month.month:
-        return "来月"
-    elif date.year == two_months_later.year and date.month == two_months_later.month:
-        return "再来月"
-    else:
-        return "その他"
 # --- パイプライン案件テーブル表示関数（修正版） ---
 def display_pipeline_projects_table(df):
     """
@@ -176,6 +163,20 @@ def display_pipeline_projects_table(df):
     display_df['受注目標日'] = display_df['受注目標日_dt'].dt.strftime('%Y-%m-%d').fillna('')
     display_df['納品予定日'] = display_df['納品予定日_dt'].dt.strftime('%Y-%m-%d').fillna('')
 
+    # グループ化用の関数を定義　（今月・翌月・翌々月）
+    def get_month_group(date):
+        if pd.isna(date):
+            return "その他"
+    
+        if date.year == today.year and date.month == today.month:
+            return "今月"
+        elif date.year == next_month.year and date.month == next_month.month:
+            return "来月"
+        elif date.year == two_months_later.year and date.month == two_months_later.month:
+            return "再来月"
+        else:
+            return "その他"
+    
     # 表示する最終的なカラムを選択（日付列を文字列形式に置き換え）
     final_cols = [
         '営業担当者',
