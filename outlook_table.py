@@ -166,7 +166,7 @@ def display_pipeline_projects_table(df):
                     "見込売上額": st.column_config.NumberColumn(
                         "見込売上額",
                         help="案件の予想売上金額",
-                        format="¥%,d",
+                        format="¥{:,}", # この行を修正
                     ),
                     "受注目標日": st.column_config.DateColumn(
                         "受注目標日",
