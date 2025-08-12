@@ -98,9 +98,11 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
     stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
     
-    # 受注金額から通貨記号やカンマを除去し、数値に変換
+    # 受注金額と見込売上額から通貨記号やカンマを除去し、数値に変換
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
+    deals_df['見込売上額'] = deals_df['見込売上金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
+    deals_df["見込売上額"] = pd.to_numeric(deals_df["見込売上額"], errors="coerce")
     
     # 複数DataFrameをマージ
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
@@ -143,7 +145,7 @@ def display_pipeline_projects_table(df):
         '案件名',
         '受注目標日_dt', # ソートに使うため一時的に使用
         '納品予定日_dt', # ソートに使うため一時的に使用
-        'フェーズ',
+        '見込売上額',
         '受注金額'
     ]
 
@@ -167,7 +169,7 @@ def display_pipeline_projects_table(df):
         '案件名',
         '受注目標日',
         '納品予定日',
-        'フェーズ',
+        '見込売上額',
         '受注金額'
     ]
     display_df = display_df[final_cols]
@@ -179,66 +181,12 @@ def display_pipeline_projects_table(df):
     for name, group in grouped:
         with st.expander(f"営業担当者: {name}"):
             st.dataframe(group, use_container_width=True)
-# --- パイプライン案件テーブル表示関数 ---
-def display_pipeline_projects_table_old(df):
-    """
-    パイプライン案件の一覧をテーブルとして表示する。
-    
-    Args:
-        df (pd.DataFrame): 処理済みのDataFrame。
-    """
-    st.subheader("パイプライン案件一覧")
-
-    
-    # 現在の日付を取得
-    today = datetime.now()
-    # '受注目標日'が未来の日付であるか、または'納品予定日'が記載されている案件を抽出
-    df_pipeline = df[(pd.to_datetime(df['受注目標日'], errors='coerce') > today) | df['納品予定日'].notna()].copy()
-    
-    if df_pipeline.empty:
-        st.info("受注目標日または納品予定日が記載されている案件がありません。")
-        return
-
-    # 表示用にカラム名を変更
-    display_df = df_pipeline.rename(columns={
-        'Full Name': '営業担当者', 
-        'Deal Name': '案件名'
-    })
-    
-    # 表示するカラムを選択
-    cols_to_display = [
-        '営業担当者',
-        '案件名',
-        '受注目標日',
-        '納品予定日',
-        'Stage Name',
-        '受注金額'
-    ]
-    
-    # データフレームから必要なカラムのみを抽出
-    display_df = display_df[cols_to_display]
-    
-    # 日付型に変換
-    for col in ['受注目標日', '納品予定日']:
-        display_df[col] = pd.to_datetime(display_df[col], errors='coerce').dt.strftime('%Y-%m-%d')
-        
-    # ソート
-    display_df = display_df.sort_values(by=['営業担当者', '受注金額'], ascending=[True, False])
-    
-    # 日付型に変換
-    for col in ['受注目標日', '納品予定日']:
-        display_df[col] = pd.to_datetime(display_df[col], errors='coerce')  # Invalid values become NaT
-        display_df[col] = display_df[col].fillna(pd.Timestamp('1970-01-01'))  # Fill NaT with a default date if needed
-    display_df = display_df.sort_values(by=['受注目標日'],ascending=[True])
-        
-    # 営業担当者ごとにデータをグループ化
-    grouped = display_df.groupby('営業担当者')
-    # 各営業担当者のデータを個別に表示
-    for name, group in grouped:
-        # st.expander を使って開閉可能なセクションを作成
-        with st.expander(f"営業担当者: {name}"):
-            # Streamlitでデータフレームを表示
-            st.dataframe(group, use_container_width=True)
+            # 受注金額の合計を計算
+            total_amount = group['受注金額'].sum()
+            total_outlook = group['見込売上額'].sum()
+            # 合計金額を分かりやすく表示
+            st.markdown(f"***合計受注金額: {total_amount:,.0f}***")
+            st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
 
 # --- メインアプリケーションの実行部分 ---
 def main():
