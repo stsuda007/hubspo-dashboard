@@ -109,9 +109,9 @@ def display_pipeline_projects_table(df):
     cols_to_display = [
         '営業担当者',
         '案件名',
-        '見込売上額',
         '受注目標日_dt',
         '納品予定日_dt',
+        '見込売上額',
         'フェーズ',
         '受注金額'
     ]
@@ -166,7 +166,7 @@ def display_pipeline_projects_table(df):
                     "見込売上額": st.column_config.NumberColumn(
                         "見込売上額",
                         help="案件の予想売上金額",
-                        format="¥%d",
+                        format="¥%,d",
                     ),
                     "受注目標日": st.column_config.DateColumn(
                         "受注目標日",
@@ -211,7 +211,7 @@ def display_pipeline_projects_table(df):
                     "見込売上額": st.column_config.NumberColumn(
                         "見込売上額",
                         help="案件の予想売上金額",
-                        format="¥%d",
+                        format="¥%,d",
                     ),
                     "受注目標日": st.column_config.DateColumn(
                         "受注目標日",
