@@ -88,7 +88,7 @@ merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how
 merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
 # Convert date columns to datetime objects
-date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date','活動提案アクション', '実施予定日','Close Date', '現地デモ実施日', '営業引継ぎ日', '撮像/解析完了日', '撮影日', '失注日', 'Snapshot_Date', '治具手配日', '検証_開始日']
+date_columns = ['初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日','最終見積提出日', 'Create Date','活動提案アクション', '実施予定日','Close Date', '現地デモ実施日', '営業引継ぎ日', '撮像/解析完了日', '撮影日', '失注日', 'Snapshot_date', '治具手配日', '検証_開始日']
 for col in date_columns:
     if col in merged_df.columns:
         merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce')
@@ -126,8 +126,8 @@ if selected_deal_status != "すべて":
 
 if "すべて" not in selected_sales_reps:
     filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
-# Snapshot_Dateには案件ごとの最新更新日が格納されているので、その日にちでフィルタ
-filtered_df = filtered_df[(filtered_df["Snapshot_Date"].dt.date >= start_date) & (filtered_df["Snapshot_Date"].dt.date <= end_date)]
+# Snapshot_dateには案件ごとの最新更新日が格納されているので、その日にちでフィルタ
+filtered_df = filtered_df[(filtered_df["Snapshot_date"].dt.date >= start_date) & (filtered_df["Snapshot_date"].dt.date <= end_date)]
 
 # --- KPI Section ---
 def display_kpis(df):#KPIセクション
