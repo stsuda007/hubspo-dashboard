@@ -196,42 +196,6 @@ def display_pipeline_projects_table(df):
             total_outlook = group['見込売上額'].sum()
             st.markdown(f"***合計受注金額: {total_amount:,.0f}***")
             st.markdown(f"***合計売上見込額: {total_outlook:,.0f}***")
-    
-    # --- 月ごとの表示 ---
-    st.subheader("月別パイプライン")
-    
-    # 月ごとのグルーピングロジック
-    next_month = (today.replace(day=1) + timedelta(days=32)).replace(day=1)
-    two_months_later = (today.replace(day=1) + timedelta(days=62)).replace(day=1)
-
-    def get_month_group(date):
-        if pd.isna(date):
-            return "その他"
-        if date.year == today.year and date.month == today.month:
-            return "今月"
-        elif date.year == next_month.year and date.month == next_month.month:
-            return "来月"
-        elif date.year == two_months_later.year and date.month == two_months_later.month:
-            return "再来月"
-        else:
-            return "その他"
-    
-    # '受注目標日_dt'列を使ってグルーピング用の新しい列を作成
-    display_df['Grouping Month'] = display_df['受注目標日_dt'].apply(get_month_group)
-
-    # 新しい列でデータをグループ化
-    grouped_by_month = display_df.groupby('Grouping Month')
-    
-    # 各グループのデータを個別に表示
-    for name, group2 in grouped_by_month:
-        with st.expander(f"{name}"):
-            st.dataframe(
-                group2.drop(columns=['受注目標日_dt', '納品予定日_dt']), 
-                use_container_width=True, 
-                height=300
-            )
-            total_outlook2 = group2['見込売上額'].sum()
-            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
             
 # --- メインアプリケーションの実行部分 ---
 def main():
