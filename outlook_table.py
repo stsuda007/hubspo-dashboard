@@ -183,7 +183,7 @@ def display_pipeline_projects_table(df):
                     format="MM/DD",
                     ),
                 },
-                hide_index=True
+                hide_index=False
             )
             #st.dataframe(
             #    group2.drop(columns=['受注目標日_dt', '納品予定日_dt', 'Grouping Month']),
