@@ -76,9 +76,6 @@ if deals_df.empty or stages_df.empty or users_df.empty:
     st.stop()
 
 # --- Data preprocessing ---
-import pandas as pd
-import numpy as np
-
 def preprocess_data(deals, stages, users):
     """
     データの前処理を1つの関数にまとめる
@@ -90,69 +87,22 @@ def preprocess_data(deals, stages, users):
     
     # 案件データの前処理
     deals_df = deals.copy()
-    
-    # 必要な列が存在するかを確認
-    required_columns = ['Deal owner', 'Pipeline', '取引ステージ']
-    if not all(col in deals_df.columns for col in required_columns):
-        st.error(f"データフレームに以下の必要な列がありません: {', '.join(required_columns)}")
-        return pd.DataFrame(), pd.DataFrame()
-        
-    deals_df = deals_df.rename(columns={"Deal owner": "User ID"})
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
 
     # 列を数値型に安全に変換
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
+    deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
     stages_df = stages.copy()
-    stages_df = stages_df.rename(columns={'Stage ID': 'Stage ID', 'Pipeline': 'Pipeline', '取引ステージ': '取引ステージ'})
     stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
-    
-    # 1. マッピング用の辞書を作成
-    # 「取引ステージ」が入力されている場合は、そちらを優先する
-    stage_mapping = {
-        (row['Pipeline'], row['取引ステージ']): row['Stage ID']
-        for _, row in stages_df.iterrows()
-    }
-    
-    # 2. 「取引ステージ」が空の場合は「Pipeline」でマッピング
-    # これにより、上記のマッピングの重複を防ぐ
-    for _, row in stages_df.iterrows():
-        if pd.isna(row['取引ステージ']):
-            stage_mapping[(row['Pipeline'], np.nan)] = row['Stage ID']
-
-    # 3. deals_dfに新しいStage ID列を作成
-    deals_df['Stage ID'] = np.nan
-    
-    # 各行のPipelineと取引ステージに基づいてStage IDを決定
-    for idx, row in deals_df.iterrows():
-        pipeline = row['Pipeline']
-        deal_stage = row['取引ステージ']
-        
-        # ロジック1: 「取引ステージ」が空の場合
-        if pd.isna(deal_stage):
-            # ロジック2: 「案件」で取引ステージが空の場合、Stage IDを20とする
-            if pipeline == '案件':
-                deals_df.at[idx, 'Stage ID'] = 20
-            elif (pipeline, np.nan) in stage_mapping:
-                deals_df.at[idx, 'Stage ID'] = stage_mapping.get((pipeline, np.nan))
-        # ロジック3: 「取引ステージ」に値がある場合
-        else:
-            if (pipeline, deal_stage) in stage_mapping:
-                deals_df.at[idx, 'Stage ID'] = stage_mapping.get((pipeline, deal_stage))
-            else:
-                # マッピングにない場合はNaNとする
-                deals_df.at[idx, 'Stage ID'] = np.nan
-
 
     # 受注金額のクレンジング
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
+    #deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0)
 
     # データフレームのマージ
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
-    
-    # マージ後に重複する「Pipeline」列などを削除して整理
-    merged_df = merged_df.drop(columns=['Pipeline_y', '取引ステージ_y'], errors='ignore')
-    merged_df = merged_df.rename(columns={'Pipeline_x': 'Pipeline', '取引ステージ_x': '取引ステージ'})
 
     # --- 案件タイプの名寄せ ---
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
@@ -173,8 +123,7 @@ def preprocess_data(deals, stages, users):
             return "Renewal"
         if sl in ("partner",):
             return "Other"
-        return "Other"
-        
+        return "Other" #それ以外はOther
     merged_df["Anken Type"] = (
         merged_df["Deal Type"]
         .apply(agg_anken_type)
@@ -193,6 +142,8 @@ def preprocess_data(deals, stages, users):
             merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce')
     
     return merged_df, stages_df
+
+merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
@@ -338,7 +289,7 @@ def display_kpis(df):
 
 
 # --- Funnel Chart ---
-def create_funnel_chart_old(df, stages_df):
+def create_funnel_chart(df, stages_df):
     st.subheader("案件ステージ別ファネルチャート")
     if df.empty:
         st.info("データがありません。")
@@ -361,40 +312,7 @@ def create_funnel_chart_old(df, stages_df):
     ))
     fig.update_layout(height=500, width=800, margin=dict(t=0, b=0, l=0, r=0))
     st.plotly_chart(fig, use_container_width=True)
-    
-def create_funnel_chart(df, stages_df):
-    st.subheader("案件ステージ別ファネルチャート")
-    
-    if df.empty:
-        st.info("データがありません。")
-        return
 
-    # 'Stage ID'と'Stage Name'でファネルデータを集計
-    # 'Stage ID'でグループ化し、件数をカウント
-    funnel_data = df.groupby('Stage ID').size().reset_index(name='Count')
-    
-    # stages_dfからStage Nameをマージして追加
-    funnel_data = funnel_data.merge(stages_df[['Stage ID', 'Stage Name']], on='Stage ID', how='left')
-    
-    # Stage IDの昇順で並び替えて、ファネルの順序を確保
-    funnel_data = funnel_data.sort_values('Stage ID')
-
-    # Plotly ファネルチャートの作成
-    fig = go.Figure(go.Funnel(
-        y = funnel_data["Stage Name"],
-        x = funnel_data["Count"],
-        textinfo = "value+percent initial",
-        marker = {"color": ["deepskyblue", "lightseagreen", "cadetblue", "teal", "dodgerblue", "steelblue", "skyblue", "powderblue", "lightblue", "lightsteelblue"]}
-    ))
-    
-    fig.update_layout(
-        title="案件ステージ別ファネル",
-        height=500,
-        width=800,
-        margin=dict(t=50, b=0, l=0, r=0)
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
 
 # --- Monthly Won Amount Bar Chart ---
 def create_monthly_bar_chart(df):
