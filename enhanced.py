@@ -259,7 +259,7 @@ filtered_df = filtered_df[(filtered_df[date_col].dt.date >= start_date) & (filte
 # --- KPI Section ---
 def display_kpis(df):
     st.subheader("主要KPI")
-    st.markdown(f"{start_date,YY/MM/DD}~{end_date,YY/MM/DD}")
+    st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
     won_deals_df = df[df['受注/失注'] == '受注'].copy()
     
     total_won_value = won_deals_df["受注金額"].sum() if not won_deals_df.empty else 0
