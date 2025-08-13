@@ -8,6 +8,7 @@ import streamlit as st
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
+from dateutil.relativedelta import relativedelta
 
 # --- Streamlitページの基本設定 ---
 st.set_page_config(layout="wide", page_title="強化版HubSpot Deals ダッシュボード")
@@ -151,31 +152,19 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     current_month = today.month
 
     # Calculate fiscal year dates
-    if current_month >= fiscal_start_month:
-        fiscal_year_start = datetime(current_year, fiscal_start_month, 1).date()
-        fiscal_year_end = datetime(current_year + 1, fiscal_start_month, 1).date() - timedelta(days=1)
-    else:
-        fiscal_year_start = datetime(current_year - 1, fiscal_start_month, 1).date()
-        fiscal_year_end = datetime(current_year, fiscal_start_month, 1).date() - timedelta(days=1)
+    fiscal_year_start = today.replace(month=fiscal_start_month, day=1)
+    if fiscal_year_start > today:
+        fiscal_year_start -= relativedelta(years=1)
+    fiscal_year_end = fiscal_year_start + relativedelta(years=1) - timedelta(days=1)
 
     # Calculate fiscal half-year dates (H1: Apr-Sep, H2: Oct-Mar)
-    if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
-        half_year_start = datetime(current_year, fiscal_start_month, 1).date()
-        half_year_end = datetime(current_year, fiscal_start_month + 6, 1).date() - timedelta(days=1)
-    else:
-        # This handles H2 of the current fiscal year, or H1 of the next fiscal year if we're in Q1
-        half_year_start = datetime(current_year, fiscal_start_month + 6, 1).date()
-        if fiscal_start_month + 6 > 12: # Check if the half year rolls into the next calendar year
-            half_year_start = datetime(current_year + 1, (fiscal_start_month + 6) % 12, 1).date()
-        
-        # End date logic needs to be careful about year boundaries
-        if half_year_start.month < fiscal_start_month: # e.g. Oct -> Mar
-            half_year_end = datetime(half_year_start.year + 1, half_year_start.month - 6, 1).date() - timedelta(days=1)
-        else:
-            half_year_end = datetime(half_year_start.year, half_year_start.month + 6, 1).date() - timedelta(days=1)
+    half_year_start = fiscal_year_start
+    if today.month >= fiscal_start_month + 6 or today.month < fiscal_start_month:
+        half_year_start += relativedelta(months=6)
 
+    half_year_end = half_year_start + relativedelta(months=6) - timedelta(days=1)
 
-    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
+    return fiscal_year_start.date(), fiscal_year_end.date(), half_year_start.date(), half_year_end.date()
 
 # --- Sidebar Filters ---
 st.sidebar.header("フィルタ")
