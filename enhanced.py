@@ -189,7 +189,7 @@ today = datetime.now().date()
 # We need to import timedelta from datetime for this to work
 from datetime import timedelta
 fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today) #年度の計算
-
+date_col = 'Snapshot_date'
 min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
 max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
 
