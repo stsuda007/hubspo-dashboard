@@ -102,7 +102,7 @@ deal_status_options = ["すべて"] + list(merged_df["Pipeline (name)"].unique()
 selected_deal_status = st.sidebar.selectbox("パイプライン", deal_status_options)
 # リードの選択
 lead_options = ["すべて"] + list(merged_df["リード経路"].unique())
-selected_deal_status = st.sidebar.selectbox("リード", deal_status_options)
+selected_deal_status = st.sidebar.selectbox("リード", lead_options)
 # 営業担当者の選択
 sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
 selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_options, default=["すべて"])
