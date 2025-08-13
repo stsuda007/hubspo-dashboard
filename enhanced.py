@@ -80,7 +80,7 @@ def preprocess_data(deals, stages, users):
     deals_df = deals.copy().rename(columns={"Deal owner": "User ID"})
     
     # 必要な列の存在をまとめて確認
-    required_deals_cols = ['Deal owner', 'Pipeline', '取引ステージ', 'Deal Name', '受注金額', '受注日', '初回商談実施日', 'Create Date', '受注/失注', 'リード経路', 'Deal Type']
+    required_deals_cols = ['Deal owner', 'Pipeline', 'Deal Name', '受注金額', '受注日', '初回商談実施日', 'Create Date', '受注/失注', 'リード経路', 'Deal Type']
     if not all(col in deals_df.columns for col in required_deals_cols):
         missing_cols = [col for col in required_deals_cols if col not in deals_df.columns]
         st.error(f"案件データに以下の必要な列がありません: {', '.join(missing_cols)}")
