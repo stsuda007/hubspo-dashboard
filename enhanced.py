@@ -104,6 +104,31 @@ def preprocess_data(deals, stages, users):
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
+    # --- 案件タイプの名寄せ ---
+    anken_type = ["New", "Upsell", "Renewal", "Other"]
+    def agg_anken_type(val) -> str:
+        if pdf.isna(val):
+            return "Other"
+        s = str(val).strip()
+        if s in ("CSアカウント", "CS導入サービス"):
+            return "Upsell"
+        if s == "Partner":
+            return "Other"
+        sl = s.lower()
+        if sl in ("newbusiness", "new business", "new"):
+            return "New"
+        if sl in ("existingbusiness", "existing business", "upsell", "cross-sell", "cross sell", "expansion"):
+            return "Upsell"
+        if sl in ("renewal", "renew"):
+            return "Renewal"
+        if sl in ("partner",):
+            return "Other"
+        return "Other" #それ以外はOther
+    merged_df["Anken Type"] = (
+        merged_df["Deal Type"]
+        .apply(agg_anken_type)
+        .astype(pdCategoricalDtype(categories=anken_type, ordered=True))
+
     # 日付列をdatetimeオブジェクトに変換
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
@@ -119,7 +144,7 @@ def preprocess_data(deals, stages, users):
 
 merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 
-# --- Helper function for dynamic date ranges ---
+# --- Helper function for dynamic date ranges年度計算 ---
 def get_fiscal_dates(today, fiscal_start_month=4):
     """
     Calculates the start and end dates for the current fiscal year and half-year.
@@ -156,7 +181,6 @@ def get_fiscal_dates(today, fiscal_start_month=4):
 
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
 
-
 # --- Sidebar Filters ---
 st.sidebar.header("フィルタ")
 
@@ -170,6 +194,10 @@ else:
 # リードの選択
 lead_options = ["すべて"] + list(merged_df["リード経路"].dropna().unique())
 selected_lead_path = st.sidebar.selectbox("リード経路", lead_options)
+
+# 案件タイプの選択
+new_upsell = ["すべて"] + list(merged_df["Anken_Type"].dropna().unique())
+selected_new_upsell= st.sidebar.selectbox("案件タイプ", new_upsell)
 
 # 営業担当者の選択
 sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
