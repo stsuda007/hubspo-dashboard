@@ -127,7 +127,7 @@ def preprocess_data(deals, stages, users):
     merged_df["Anken Type"] = (
         merged_df["Deal Type"]
         .apply(agg_anken_type)
-        .astype(pdCategoricalDtype(categories=anken_type, ordered=True))
+        .astype(pd.CategoricalDtype(categories=anken_type, ordered=True))
     )
 
     # 日付列をdatetimeオブジェクトに変換
