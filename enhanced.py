@@ -197,7 +197,7 @@ lead_options = ["すべて"] + list(merged_df["リード経路"].dropna().unique
 selected_lead_path = st.sidebar.selectbox("リード経路", lead_options)
 
 # 案件タイプの選択
-new_upsell = ["すべて"] + list(merged_df["Anken_Type"].dropna().unique())
+new_upsell = ["すべて"] + list(merged_df["Anken Type"].dropna().unique())
 selected_new_upsell= st.sidebar.selectbox("案件タイプ", new_upsell)
 
 # 営業担当者の選択
