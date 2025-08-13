@@ -107,7 +107,7 @@ def preprocess_data(deals, stages, users):
     # --- 案件タイプの名寄せ ---
     anken_type = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
-        if pdf.isna(val):
+        if pd.isna(val):
             return "Other"
         s = str(val).strip()
         if s in ("CSアカウント", "CS導入サービス"):
