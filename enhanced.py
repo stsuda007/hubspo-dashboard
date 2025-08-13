@@ -128,6 +128,7 @@ def preprocess_data(deals, stages, users):
         merged_df["Deal Type"]
         .apply(agg_anken_type)
         .astype(pdCategoricalDtype(categories=anken_type, ordered=True))
+    )
 
     # 日付列をdatetimeオブジェクトに変換
     date_columns = [
@@ -240,19 +241,6 @@ else: # "カスタム"
         max_value=max_date_val
     )
 
-# --- Apply filters ---
-filtered_df = merged_df.copy()
-
-if selected_deal_status != "すべて":
-    filtered_df = filtered_df[filtered_df["受注/失注"] == selected_deal_status]
-
-if selected_lead_path != "すべて":
-    filtered_df = filtered_df[filtered_df["リード経路"] == selected_lead_path]
-
-if "すべて" not in selected_sales_reps:
-    filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
-
-filtered_df = filtered_df[(filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)]
 # --- Apply filters ---
 filtered_df = merged_df.copy()
 
