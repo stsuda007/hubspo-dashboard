@@ -74,6 +74,10 @@ deals_df, stages_df, users_df = load_data_with_retry()
 
 if deals_df.empty or stages_df.empty or users_df.empty:
     st.stop()
+# ここでmerged_dfが空でないことを確認する
+if merged_df.empty:
+    st.error("データの前処理中にエラーが発生しました。スプレッドシートの列名を確認してください。")
+    st.stop()
 
 # --- Data preprocessing ---
 import pandas as pd
