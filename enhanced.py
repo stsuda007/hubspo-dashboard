@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
 from dateutil.relativedelta import relativedelta
@@ -147,24 +147,31 @@ def preprocess_data(deals, stages, users):
 merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
-def get_fiscal_dates(today, fiscal_start_month=1): 
-    current_year = today.year
-    current_month = today.month
-
-    # Calculate fiscal year dates
+def get_fiscal_dates(today, fiscal_start_month=1):
+    """
+    Calculates the start and end dates for the current fiscal year and half-year.
+    Assumes a fiscal year starting in April.
+    """
+    # Calculate the fiscal year start date
     fiscal_year_start = today.replace(month=fiscal_start_month, day=1)
     if fiscal_year_start > today:
         fiscal_year_start -= relativedelta(years=1)
+    
+    # Calculate the fiscal year end date
     fiscal_year_end = fiscal_year_start + relativedelta(years=1) - timedelta(days=1)
 
-    # Calculate fiscal half-year dates (H1: Apr-Sep, H2: Oct-Mar)
+    # Calculate the fiscal half-year dates
+    # The first half starts with the fiscal year
     half_year_start = fiscal_year_start
-    if today.month >= fiscal_start_month + 6 or today.month < fiscal_start_month:
+    # If today is in the second half of the fiscal year, adjust the start date
+    if today >= fiscal_year_start + relativedelta(months=6):
         half_year_start += relativedelta(months=6)
 
+    # The half-year end date is always 6 months after the half-year start, minus one day
     half_year_end = half_year_start + relativedelta(months=6) - timedelta(days=1)
 
     return fiscal_year_start.date(), fiscal_year_end.date(), half_year_start.date(), half_year_end.date()
+
 
 # --- Sidebar Filters ---
 st.sidebar.header("フィルタ")
