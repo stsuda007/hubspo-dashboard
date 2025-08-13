@@ -8,7 +8,6 @@ import streamlit as st
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
-from dateutil.relativedelta import relativedelta
 
 # --- Streamlitページの基本設定 ---
 st.set_page_config(layout="wide", page_title="強化版HubSpot Deals ダッシュボード")
@@ -149,30 +148,47 @@ merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
     """
-    Calculates the start and end dates for the current fiscal year and half-year.
-    Assumes a fiscal year starting in April.
+    Calculates the start and end dates for the current fiscal year and half-year
+    using standard datetime and timedelta libraries.
     """
-    # Calculate the fiscal year start date
-    fiscal_year_start = today.replace(month=fiscal_start_month, day=1)
-    if fiscal_year_start > today:
-        fiscal_year_start -= relativedelta(years=1)
+    current_year = today.year
+    current_month = today.month
+
+    # --- Calculate fiscal year dates ---
+    if current_month >= fiscal_start_month:
+        fiscal_year_start = datetime(current_year, fiscal_start_month, 1).date()
+        fiscal_year_end = datetime(current_year + 1, fiscal_start_month, 1).date() - timedelta(days=1)
+    else:
+        fiscal_year_start = datetime(current_year - 1, fiscal_start_month, 1).date()
+        fiscal_year_end = datetime(current_year, fiscal_start_month, 1).date() - timedelta(days=1)
+
+    # --- Calculate fiscal half-year dates ---
+    # Determine the half-year's start month and year
+    if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
+        # First half of the fiscal year
+        half_year_start = fiscal_year_start
+    else:
+        # Second half of the fiscal year
+        start_month_h2 = fiscal_start_month + 6
+        if start_month_h2 > 12:
+            start_month_h2 = start_month_h2 % 12
+            start_year_h2 = fiscal_year_start.year + 1
+        else:
+            start_year_h2 = fiscal_year_start.year
+            
+        half_year_start = datetime(start_year_h2, start_month_h2, 1).date()
+
+    # Determine the half-year's end month and year
+    end_month = half_year_start.month + 6
+    end_year = half_year_start.year
+
+    if end_month > 12:
+        end_month = end_month % 12
+        end_year += 1
     
-    # Calculate the fiscal year end date
-    fiscal_year_end = fiscal_year_start + relativedelta(years=1) - timedelta(days=1)
+    half_year_end = datetime(end_year, end_month, 1).date() - timedelta(days=1)
 
-    # Calculate the fiscal half-year dates
-    # The first half starts with the fiscal year
-    half_year_start = fiscal_year_start
-    # If today is in the second half of the fiscal year, adjust the start date
-    if today >= fiscal_year_start + relativedelta(months=6):
-        half_year_start += relativedelta(months=6)
-
-    # The half-year end date is always 6 months after the half-year start, minus one day
-    half_year_end = half_year_start + relativedelta(months=6) - timedelta(days=1)
-
-    return fiscal_year_start.date(), fiscal_year_end.date(), half_year_start.date(), half_year_end.date()
-
-
+    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
 # --- Sidebar Filters ---
 st.sidebar.header("フィルタ")
 
