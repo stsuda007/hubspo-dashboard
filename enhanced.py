@@ -2,7 +2,6 @@ import time
 import json
 import gspread
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -14,6 +13,7 @@ from gspread.exceptions import APIError
 st.set_page_config(layout="wide", page_title="HubSpotダッシュボード")
 
 # --- 設定値 ---
+# Google Sheetsの設定を辞書にまとめる
 CONFIG = {
     "scope": ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"],
     "deals_sheet": "Deals",
@@ -53,7 +53,7 @@ def load_data_with_retry():
 
             deals_data = pd.DataFrame(deals_ws.get_all_records())
             # stages_dataはヘッダーがないため、Range指定で取得
-            stages_data = pd.DataFrame(stages_ws.get("A2:C14"), columns=["Stage ID", "Pipeline", "取引ステージ"])
+            stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage ID", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
             return deals_data, stages_data, users_data
 
@@ -69,71 +69,121 @@ def load_data_with_retry():
     st.error("Google Sheetsの読み込みに失敗しました。後ほど再試行してください。")
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
+# --- Load data ---
+deals_df, stages_df, users_df = load_data_with_retry()
+
+if deals_df.empty or stages_df.empty or users_df.empty:
+    st.stop()
+# ここでmerged_dfが空でないことを確認する
+if merged_df.empty:
+    st.error("データの前処理中にエラーが発生しました。スプレッドシートの列名を確認してください。")
+    st.stop()
+
 # --- Data preprocessing ---
+import pandas as pd
+import numpy as np
+
 def preprocess_data(deals, stages, users):
     """
     データの前処理を1つの関数にまとめる
     """
-    users_df = users.copy().rename(columns={"ID": "User ID"})
+    # ユーザーデータの前処理
+    users_df = users.copy()
     users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
+    users_df = users_df.rename(columns={"ID": "User ID"})
     
-    deals_df = deals.copy().rename(columns={"Deal owner": "User ID"})
+    # 案件データの前処理
+    deals_df = deals.copy()
     
-    # 必要な列の存在をまとめて確認
-    required_deals_cols = ['Deal owner', 'Pipeline', '取引ステージ', 'Deal Name', '受注金額', '受注日', '初回商談実施日', 'Create Date', '受注/失注', 'リード経路', 'Deal Type']
-    if not all(col in deals_df.columns for col in required_deals_cols):
-        missing_cols = [col for col in required_deals_cols if col not in deals_df.columns]
-        st.error(f"案件データに以下の必要な列がありません: {', '.join(missing_cols)}")
+    # 必要な列が存在するかを確認
+    required_columns = ['Deal owner', 'Pipeline', '取引ステージ']
+    if not all(col in deals_df.columns for col in required_columns):
+        st.error(f"データフレームに以下の必要な列がありません: {', '.join(required_columns)}")
         return pd.DataFrame(), pd.DataFrame()
+        
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID"})
 
-    # マッピング用ステージデータフレームの準備
+    # 列を数値型に安全に変換
+    deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
     stages_df = stages.copy()
+    stages_df = stages_df.rename(columns={'Stage ID': 'Stage ID', 'Pipeline': 'Pipeline', '取引ステージ': '取引ステージ'})
     stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
-    stages_df['Pipeline_key'] = stages_df['Pipeline'].fillna('')
-    stages_df['取引ステージ_key'] = stages_df['取引ステージ'].fillna('')
-    stages_df.drop_duplicates(subset=['Pipeline_key', '取引ステージ_key'], keep='first', inplace=True)
     
-    # マッピングロジックの改善
-    deals_df['Pipeline_key'] = deals_df['Pipeline'].fillna('')
-    deals_df['取引ステージ_key'] = deals_df['取引ステージ'].fillna('')
+    # 1. マッピング用の辞書を作成
+    # 「取引ステージ」が入力されている場合は、そちらを優先する
+    stage_mapping = {
+        (row['Pipeline'], row['取引ステージ']): row['Stage ID']
+        for _, row in stages_df.iterrows()
+    }
+    
+    # 2. 「取引ステージ」が空の場合は「Pipeline」でマッピング
+    # これにより、上記のマッピングの重複を防ぐ
+    for _, row in stages_df.iterrows():
+        if pd.isna(row['取引ステージ']):
+            stage_mapping[(row['Pipeline'], np.nan)] = row['Stage ID']
 
-    # 「取引ステージ」が空で「Pipeline」が「案件」の場合のStage IDを20に設定
-    deals_df.loc[(deals_df['Pipeline'] == '案件') & deals_df['取引ステージ'].isna(), 'Stage ID'] = 20
+    # 3. deals_dfに新しいStage ID列を作成
+    deals_df['Stage ID'] = np.nan
+    
+    # 各行のPipelineと取引ステージに基づいてStage IDを決定
+    for idx, row in deals_df.iterrows():
+        pipeline = row['Pipeline']
+        deal_stage = row['取引ステージ']
+        
+        # ロジック1: 「取引ステージ」が空の場合
+        if pd.isna(deal_stage):
+            # ロジック2: 「案件」で取引ステージが空の場合、Stage IDを20とする
+            if pipeline == '案件':
+                deals_df.at[idx, 'Stage ID'] = 20
+            elif (pipeline, np.nan) in stage_mapping:
+                deals_df.at[idx, 'Stage ID'] = stage_mapping.get((pipeline, np.nan))
+        # ロジック3: 「取引ステージ」に値がある場合
+        else:
+            if (pipeline, deal_stage) in stage_mapping:
+                deals_df.at[idx, 'Stage ID'] = stage_mapping.get((pipeline, deal_stage))
+            else:
+                # マッピングにない場合はNaNとする
+                deals_df.at[idx, 'Stage ID'] = np.nan
 
-    # マッピングテーブルと案件データをマージしてStage IDを決定
-    deals_df = deals_df.merge(
-        stages_df[['Stage ID', 'Pipeline_key', '取引ステージ_key']],
-        on=['Pipeline_key', '取引ステージ_key'],
-        how='left',
-        suffixes=('', '_stage_map')
-    )
-    deals_df['Stage ID'] = deals_df['Stage ID'].fillna(deals_df['Stage ID_stage_map'])
-    deals_df.drop(columns=['Stage ID_stage_map', 'Pipeline_key', '取引ステージ_key'], inplace=True)
 
     # 受注金額のクレンジング
-    deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d.]', '', regex=True)
+    deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
     # データフレームのマージ
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
-    merged_df = merged_df.merge(stages_df, on="Stage ID", how="left", suffixes=('', '_y'))
-    merged_df.drop(columns=['Pipeline_y', '取引ステージ_y', 'Pipeline_key_y', '取引ステージ_key_y'], errors='ignore', inplace=True)
+    merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
+    
+    # マージ後に重複する「Pipeline」列などを削除して整理
+    merged_df = merged_df.drop(columns=['Pipeline_y', '取引ステージ_y'], errors='ignore')
+    merged_df = merged_df.rename(columns={'Pipeline_x': 'Pipeline', '取引ステージ_x': '取引ステージ'})
 
     # --- 案件タイプの名寄せ ---
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
-        if pd.isna(val): return "Other"
+        if pd.isna(val):
+            return "Other"
         s = str(val).strip()
-        if s in ("CSアカウント", "CS導入サービス"): return "Upsell"
-        if s == "Partner": return "Other"
+        if s in ("CSアカウント", "CS導入サービス"):
+            return "Upsell"
+        if s == "Partner":
+            return "Other"
         sl = s.lower()
-        if sl in ("newbusiness", "new business", "new"): return "New"
-        if sl in ("existingbusiness", "existing business", "upsell", "cross-sell", "cross sell", "expansion"): return "Upsell"
-        if sl in ("renewal", "renew"): return "Renewal"
-        if sl in ("partner",): return "Other"
+        if sl in ("newbusiness", "new business", "new"):
+            return "New"
+        if sl in ("existingbusiness", "existing business", "upsell", "cross-sell", "cross sell", "expansion"):
+            return "Upsell"
+        if sl in ("renewal", "renew"):
+            return "Renewal"
+        if sl in ("partner",):
+            return "Other"
         return "Other"
         
-    merged_df["Anken Type"] = merged_df["Deal Type"].apply(agg_anken_type).astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
+    merged_df["Anken Type"] = (
+        merged_df["Deal Type"]
+        .apply(agg_anken_type)
+        .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
+    )
 
     # 日付列をdatetimeオブジェクトに変換
     date_columns = [
@@ -148,7 +198,7 @@ def preprocess_data(deals, stages, users):
     
     return merged_df, stages_df
 
-# --- Helper function for dynamic date ranges ---
+# --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
     """
     Calculates the start and end dates for the current fiscal year and half-year
@@ -166,34 +216,32 @@ def get_fiscal_dates(today, fiscal_start_month=1):
         fiscal_year_end = datetime(current_year, fiscal_start_month, 1).date() - timedelta(days=1)
 
     # --- Calculate fiscal half-year dates ---
-    half_year_start = fiscal_year_start
-    if current_month >= (fiscal_start_month + 6) or (current_month < fiscal_start_month and current_month < (fiscal_start_month+6)%12):
-        start_month_h2 = (fiscal_start_month + 5) % 12 + 1
-        if start_month_h2 <= fiscal_start_month:
+    # Determine the half-year's start month and year
+    if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
+        # First half of the fiscal year
+        half_year_start = fiscal_year_start
+    else:
+        # Second half of the fiscal year
+        start_month_h2 = fiscal_start_month + 6
+        if start_month_h2 > 12:
+            start_month_h2 = start_month_h2 % 12
             start_year_h2 = fiscal_year_start.year + 1
         else:
             start_year_h2 = fiscal_year_start.year
+            
         half_year_start = datetime(start_year_h2, start_month_h2, 1).date()
+
+    # Determine the half-year's end month and year
+    end_month = half_year_start.month + 6
+    end_year = half_year_start.year
+
+    if end_month > 12:
+        end_month = end_month % 12
+        end_year += 1
     
-    half_year_end = (datetime(half_year_start.year, half_year_start.month, 1) + timedelta(days=182)) - timedelta(days=1)
-    
+    half_year_end = datetime(end_year, end_month, 1).date() - timedelta(days=1)
+
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
-
-# --- Main app logic ---
-
-# データのロードと初期チェック
-deals_df, stages_df, users_df = load_data_with_retry()
-
-if deals_df.empty or stages_df.empty or users_df.empty:
-    st.stop()
-
-# データの前処理
-merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
-
-if merged_df.empty:
-    st.error("データの前処理に失敗しました。スプレッドシートの列名やフォーマットを確認してください。")
-    st.stop()
-    
 # --- Sidebar Filters ---
 st.sidebar.header("フィルタ")
 
@@ -217,17 +265,24 @@ sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique(
 selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_options, default=["すべて"])
 
 # 日付範囲の選択
+# Filter by a date range preset
 date_filter_preset = st.sidebar.radio(
     "日付範囲のプリセット",
     ("カスタム", "今半期", "今年度", "全期間")
 )
 
+# Get today's date for calculations
 today = datetime.now().date()
-fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today)
-date_col = 'Create Date' # 基準日を'Create Date'に変更
+
+# Calculate the dynamic dates
+# We need to import timedelta from datetime for this to work
+from datetime import timedelta
+fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today) #年度の計算
+date_col = 'Snapshot_date'
 min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
 max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
 
+# Set start and end dates based on the preset
 if date_filter_preset == "今半期":
     start_date = half_year_start
     end_date = half_year_end
@@ -237,7 +292,8 @@ elif date_filter_preset == "今年度":
 elif date_filter_preset == "全期間":
     start_date = min_date_val
     end_date = max_date_val
-else:
+else: # "カスタム"
+    # Show the date input only for custom range
     start_date, end_date = st.sidebar.date_input(
         "カスタム日付範囲",
         value=(min_date_val, max_date_val),
@@ -258,6 +314,7 @@ if "すべて" not in selected_sales_reps:
     filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
 
 filtered_df = filtered_df[(filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)]
+
 
 # --- KPI Section ---
 def display_kpis(df):
@@ -283,20 +340,50 @@ def display_kpis(df):
     with col3:
         st.metric(label="平均案件期間", value=f"{avg_deal_duration:,.0f} 日")
 
+
 # --- Funnel Chart ---
-def create_funnel_chart(df, stages_df):
+def create_funnel_chart_old(df, stages_df):
     st.subheader("案件ステージ別ファネルチャート")
     if df.empty:
         st.info("データがありません。")
         return
 
-    # 'Stage ID'と'Stage Name'でファネルデータを集計
-    funnel_data = df.groupby('Stage ID').size().reset_index(name='Count')
-    funnel_data = funnel_data.merge(stages_df[['Stage ID', '取引ステージ']], on='Stage ID', how='left')
-    funnel_data = funnel_data.sort_values('Stage ID')
-    funnel_data.rename(columns={'取引ステージ': 'Stage Name'}, inplace=True)
-    funnel_data['Stage Name'] = funnel_data['Stage Name'].fillna('その他')
+    # Deal Stageでグループ化してカウント
+    funnel_data = df["Stage Name"].value_counts().reset_index()
+    funnel_data.columns = ["Stage Name", "Count"]
 
+    # 適切な順序に並び替え
+    stage_order = stages_df["Stage Name"].tolist()
+    funnel_data['Stage Name'] = pd.Categorical(funnel_data['Stage Name'], categories=stage_order, ordered=True)
+    funnel_data = funnel_data.sort_values("Stage Name", ascending=False)
+    
+    fig = go.Figure(go.Funnel(
+        y = funnel_data["Stage Name"],
+        x = funnel_data["Count"],
+        textinfo = "value+percent initial",
+        marker = {"color": ["deepskyblue", "lightseagreen", "cadetblue", "teal", "dodgerblue", "steelblue", "skyblue", "powderblue", "lightblue", "lightsteelblue"]}
+    ))
+    fig.update_layout(height=500, width=800, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+    
+def create_funnel_chart(df, stages_df):
+    st.subheader("案件ステージ別ファネルチャート")
+    
+    if df.empty:
+        st.info("データがありません。")
+        return
+
+    # 'Stage ID'と'Stage Name'でファネルデータを集計
+    # 'Stage ID'でグループ化し、件数をカウント
+    funnel_data = df.groupby('Stage ID').size().reset_index(name='Count')
+    
+    # stages_dfからStage Nameをマージして追加
+    funnel_data = funnel_data.merge(stages_df[['Stage ID', 'Stage Name']], on='Stage ID', how='left')
+    
+    # Stage IDの昇順で並び替えて、ファネルの順序を確保
+    funnel_data = funnel_data.sort_values('Stage ID')
+
+    # Plotly ファネルチャートの作成
     fig = go.Figure(go.Funnel(
         y = funnel_data["Stage Name"],
         x = funnel_data["Count"],
@@ -336,17 +423,20 @@ def create_monthly_bar_chart(df):
     fig.update_layout(xaxis_title="年月", yaxis_title="受注金額 (万円)", xaxis={'categoryorder':'category ascending'})
     st.plotly_chart(fig, use_container_width=True)
 
+
 # --- Function to create the deals pipeline chart (updated) ---
 def create_pipeline_chart(df):
     st.subheader("案件パイプラインチャート")
     df_plot = df.copy()
     
+    # 欠損値処理
     df_plot = df_plot.dropna(subset=['受注日'])
     
-    # 'Create Date'列がdatetime型かチェックし、必要なら変換
-    if pd.api.types.is_datetime64_any_dtype(df_plot['Create Date']):
-        df_plot['Create Date'] = df_plot['Create Date'].dt.date
+    # Ensure 'Create Date' is of the same type as '初回商談実施日'
+    # Convert Timestamp objects to date objects
+    df_plot['Create Date'] = pd.to_datetime(df_plot['Create Date']).dt.date
     
+    # 案件開始日の代替処理
     df_plot['is_start_date_fallback'] = df_plot['初回商談実施日'].isna()
     df_plot['初回商談実施日'] = df_plot['初回商談実施日'].fillna(df_plot['Create Date'])
     df_plot['案件名'] = df_plot['Deal Name'] + '<br>' + '(' + df_plot['リード経路'].fillna('不明') + ')'
@@ -358,6 +448,8 @@ def create_pipeline_chart(df):
         st.info("プロット可能な案件がありませんでした。")
         return
 
+    # Now all values in the 'Start' column are of the same type,
+    # so sorting will work without a TypeError.
     df_plot = df_plot.sort_values('Start', ascending=False)
     
     fig = go.Figure()
@@ -386,12 +478,7 @@ def create_pipeline_chart(df):
             hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>日付: {row['Start'].strftime('%Y-%m-%d')}<br>種別: {start_date_label}"
         ))
 
-        # NaN値をチェックして、テキストを適切に表示
-        if pd.notna(row['受注金額']):
-            text_label = f"{row['受注金額']:,.0f}万円"
-        else:
-            text_label = '失注'
-            
+        text_label = f"{row['受注金額']:,.0f}万円" if row['受注/失注'] == '受注' and pd.notna(row['受注金額']) else '失注'
         marker_color_end = 'red' if row['受注/失注'] == '受注' else 'gray'
 
         fig.add_trace(go.Scatter(
