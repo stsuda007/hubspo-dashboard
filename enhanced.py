@@ -126,7 +126,7 @@ def preprocess_data(deals, stages, users):
         return "Other" #それ以外はOther
     merged_df["Anken Type"] = (
         merged_df["Deal Type"]
-        .apply(agg_anken_type)
+        .apply(anken_type)
         .astype(pdCategoricalDtype(categories=anken_type, ordered=True))
     )
 
