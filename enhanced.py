@@ -105,7 +105,7 @@ def preprocess_data(deals, stages, users):
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
 
     # --- 案件タイプの名寄せ ---
-    anken_type = ["New", "Upsell", "Renewal", "Other"]
+    anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
         if pd.isna(val):
             return "Other"
@@ -127,7 +127,7 @@ def preprocess_data(deals, stages, users):
     merged_df["Anken Type"] = (
         merged_df["Deal Type"]
         .apply(agg_anken_type)
-        .astype(pd.CategoricalDtype(categories=anken_type, ordered=True))
+        .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
     )
 
     # 日付列をdatetimeオブジェクトに変換
