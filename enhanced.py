@@ -10,7 +10,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
 
 # --- Streamlitページの基本設定 ---
-st.set_page_config(layout="wide", page_title="強化版HubSpot Deals ダッシュボード")
+st.set_page_config(layout="wide", page_title="HubSpotダッシュボード")
 
 # --- 設定値 ---
 # Google Sheetsの設定を辞書にまとめる
