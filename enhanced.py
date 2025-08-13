@@ -338,6 +338,10 @@ def create_pipeline_chart(df):
     # 欠損値処理
     df_plot = df_plot.dropna(subset=['受注日'])
     
+    # Ensure 'Create Date' is of the same type as '初回商談実施日'
+    # Convert Timestamp objects to date objects
+    df_plot['Create Date'] = pd.to_datetime(df_plot['Create Date']).dt.date
+    
     # 案件開始日の代替処理
     df_plot['is_start_date_fallback'] = df_plot['初回商談実施日'].isna()
     df_plot['初回商談実施日'] = df_plot['初回商談実施日'].fillna(df_plot['Create Date'])
@@ -350,12 +354,13 @@ def create_pipeline_chart(df):
         st.info("プロット可能な案件がありませんでした。")
         return
 
+    # Now all values in the 'Start' column are of the same type,
+    # so sorting will work without a TypeError.
     df_plot = df_plot.sort_values('Start', ascending=False)
     
     fig = go.Figure()
 
     for _, row in df_plot.iterrows():
-        # パイプラインの線
         fig.add_trace(go.Scatter(
             x=[row['Start'], row['Finish']],
             y=[row['案件名'], row['案件名']],
@@ -365,7 +370,6 @@ def create_pipeline_chart(df):
             hoverinfo='none'
         ))
 
-        # 開始日のマーカー
         marker_color_start = 'gray' if row['is_start_date_fallback'] else 'blue'
         start_date_label = "案件作成日" if row['is_start_date_fallback'] else "初回商談実施日"
         
@@ -380,7 +384,6 @@ def create_pipeline_chart(df):
             hovertext=f"案件名: {row['Deal Name']}<br>営業担当:{row['Full Name']}<br>日付: {row['Start'].strftime('%Y-%m-%d')}<br>種別: {start_date_label}"
         ))
 
-        # 終了日のマーカー
         text_label = f"{row['受注金額']:,.0f}万円" if row['受注/失注'] == '受注' and pd.notna(row['受注金額']) else '失注'
         marker_color_end = 'red' if row['受注/失注'] == '受注' else 'gray'
 
@@ -397,17 +400,16 @@ def create_pipeline_chart(df):
             hovertext=f"案件名: {row['Deal Name']}<br>金額: {text_label}"
         ))
             
-        # 中間地点のマーカー
-        for mid_col, mid_label, mid_color in [
-            ('報告/提案日', '報告/提案日', 'green'),
-            ('概算見積提出日', '概算見積提出日', 'purple')
+        for mid_col, mid_label, mid_color, mid_symbol in [
+            ('報告/提案日', '報告/提案日', 'green', 'diamond'),
+            ('概算見積提出日', '概算見積提出日', 'purple', 'diamond')
         ]:
             if mid_col in df_plot.columns and pd.notna(row[mid_col]):
                 fig.add_trace(go.Scatter(
                     x=[row[mid_col]],
                     y=[row['案件名']],
                     mode='markers',
-                    marker=dict(color=mid_color, size=7, symbol='diamond'),
+                    marker=dict(color=mid_color, size=7, symbol=mid_symbol),
                     name=f"{row['Deal Name']} ({mid_label})",
                     showlegend=False,
                     hoverinfo='text',
