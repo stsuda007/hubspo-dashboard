@@ -145,8 +145,8 @@ def preprocess_data(deals, stages, users):
 
 merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 
-# --- Helper function for dynamic date ranges年度計算 ---
-def get_fiscal_dates(today, fiscal_start_month=1): #fiscal_start_monthは年度始まりの月
+# --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
+def get_fiscal_dates(today, fiscal_start_month=1): 
     current_year = today.year
     current_month = today.month
 
