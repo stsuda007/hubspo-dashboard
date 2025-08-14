@@ -52,10 +52,12 @@ def load_data_with_retry():
             users_ws = gc.open_by_key(SPREADSHEET_KEY).worksheet(CONFIG["users_sheet"])
 
             deals_data = pd.DataFrame(deals_ws.get_all_records())
-            # stages_dataはヘッダーがないため、Range指定で取得
             stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage ID", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
-            return deals_data, stages_data, users_data
+            # 新しいファネルマッピングデータを追加
+            funnel_mapping_raw = stages_ws.get("E1:H13")
+            funnel_mapping = pd.DataFrame(funnel_mapping_raw[1:], columns=funnel_mapping_raw[0])
+            return deals_data, stages_data, users_data, funnel_mapping
 
         except APIError as e:
             if "429" in str(e):
@@ -69,14 +71,14 @@ def load_data_with_retry():
     st.error("Google Sheetsの読み込みに失敗しました。後ほど再試行してください。")
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-# --- Load data ---
-deals_df, stages_df, users_df = load_data_with_retry()
+# Load data
+deals_df, stages_df, users_df, funnel_mapping_df = load_data_with_retry()
 
-if deals_df.empty or stages_df.empty or users_df.empty:
+if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empty:
     st.stop()
 
 # --- Data preprocessing ---
-def preprocess_data(deals, stages, users):
+def preprocess_data(deals, stages, users, funnel_mapping):
     """
     データの前処理を1つの関数にまとめる
     """
@@ -128,8 +130,7 @@ def preprocess_data(deals, stages, users):
         merged_df["Deal Type"]
         .apply(agg_anken_type)
         .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
-    )
-
+    ) 
     # 日付列をdatetimeオブジェクトに変換
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
@@ -140,10 +141,44 @@ def preprocess_data(deals, stages, users):
     for col in date_columns:
         if col in merged_df.columns:
             merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce')
+    # Stage ID判定とファネル名称付与の追加
+    def determine_stage_and_funnel(row, mapping_df):
+        pipeline = str(row.get('Pipeline', '')).strip()
+        deal_stage = str(row.get('Deal Stage', '')).strip()
+        
+        # Deal Stageが空欄またはnanの場合の処理
+        if deal_stage in ['', 'nan', 'None'] or pd.isna(row.get('Deal Stage')):
+            deal_stage = ''
+        
+        # 完全一致を先に試す
+        exact_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) & 
+            (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
+        ]
+        
+        if not exact_match.empty:
+            return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称']
+        
+        # 取引ステージが空欄の場合、Pipelineのみでマッチング
+        pipeline_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) & 
+            (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+        ]
+        
+        if not pipeline_match.empty:
+            return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称']
+        
+        return None, None
     
-    return merged_df, stages_df
+    # 各行にStage IDとファネル名称を付与
+    funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel(row, funnel_mapping), axis=1)
+    merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
+    merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
+    
+    return merged_df, stages_df, funnel_mapping
 
-merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
+## updated merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
+merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
 
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
@@ -289,7 +324,32 @@ def display_kpis(df):
 
 
 # --- Funnel Chart ---
-def create_funnel_chart(df, stages_df):
+def create_funnel_chart(df, funnel_mapping_df):
+    st.subheader("案件ステージ別ファネルチャート")
+    if df.empty:
+        st.info("データがありません。")
+        return
+
+    # ファネル名称でグループ化してカウント
+    funnel_data = df["Funnel_Name"].dropna().value_counts().reset_index()
+    funnel_data.columns = ["Funnel_Name", "Count"]
+
+    # Stage IDによる順序付け
+    stage_order = funnel_mapping_df.drop_duplicates('ファネル名称').sort_values('Stage ID')['ファネル名称'].tolist()
+    funnel_data['Funnel_Name'] = pd.Categorical(funnel_data['Funnel_Name'], categories=stage_order, ordered=True)
+    funnel_data = funnel_data.sort_values("Funnel_Name", ascending=False)
+    
+    # ファネルチャート作成（既存のコードと同様）
+    fig = go.Figure(go.Funnel(
+        y = funnel_data["Funnel_Name"],
+        x = funnel_data["Count"],
+        textinfo = "value+percent initial",
+        marker = {"color": ["deepskyblue", "lightseagreen", "cadetblue", "teal", "dodgerblue", "steelblue", "skyblue", "powderblue", "lightblue", "lightsteelblue"]}
+    ))
+    fig.update_layout(height=500, width=800, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+    
+def create_funnel_chart_obsolete(df, stages_df):
     st.subheader("案件ステージ別ファネルチャート")
     if df.empty:
         st.info("データがありません。")
