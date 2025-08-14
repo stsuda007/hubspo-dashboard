@@ -144,7 +144,8 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     # Stage ID判定とファネル名称付与の追加
     def determine_stage_and_funnel(row, mapping_df):
         pipeline = str(row.get('Pipeline', '')).strip()
-        deal_stage = str(row.get('Deal Stage', '')).strip()
+        #deal_stage = str(row.get('Deal Stage', '')).strip()
+        deal_stage = str(row.get('Stage ID', '')).strip()  # または適切な列名
         
         # Deal Stageが空欄またはnanの場合の処理
         if deal_stage in ['', 'nan', 'None'] or pd.isna(row.get('Deal Stage')):
@@ -515,7 +516,7 @@ st.divider()
 # ファネルチャートとバーチャートを横並びに配置
 col1, col2 = st.columns(2)
 with col1:
-    create_funnel_chart(filtered_df, stages_df)
+    create_funnel_chart(filtered_df, funnel_mapping_df)
 with col2:
     create_monthly_bar_chart(filtered_df)
 
