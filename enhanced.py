@@ -236,8 +236,9 @@ lead_options = ["すべて"] + list(merged_df["リード経路"].dropna().unique
 selected_lead_path = st.sidebar.selectbox("リード経路", lead_options)
 
 # 案件タイプの選択
+
 new_upsell = ["すべて"] + list(merged_df["Anken Type"].dropna().unique())
-selected_new_upsell= st.sidebar.selectbox("案件タイプ", new_upsell)
+selected_new_upsell = st.sidebar.selectbox("案件タイプ", new_upsell)
 
 # 営業担当者の選択
 sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
@@ -289,10 +290,20 @@ if selected_deal_status != "すべて":
 if selected_lead_path != "すべて":
     filtered_df = filtered_df[filtered_df["リード経路"] == selected_lead_path]
 
+if selected_new_upsell != "すべて":
+    filtered_df = filtered_df[filtered_df["Anken Type"] == selected_new_upsell]
+
 if "すべて" not in selected_sales_reps:
     filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
 
 filtered_df = filtered_df[(filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)]
+# Snapshot_date が存在しないケースに備えてフォールバック
+date_col = 'Snapshot_date' if 'Snapshot_date' in filtered_df.columns else 'Create Date'
+filtered_df = filtered_df[
+    (filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)
+]
+
+
 
 
 # --- KPI Section ---
@@ -327,6 +338,11 @@ def create_funnel_chart(df, funnel_mapping_df):
         st.info("データがありません。")
         return
 
+    # 並び順は Stage ID の数値昇順に（型を数値化しておく）
+    fm = funnel_mapping_df.drop_duplicates('ファネル名称').copy()
+    fm['Stage ID'] = pd.to_numeric(fm['Stage ID'], errors='coerce')
+    stage_order = fm.sort_values('Stage ID')['ファネル名称'].tolist()
+    
     # ファネル名称でグループ化してカウント
     funnel_data = df["Funnel_Name"].dropna().value_counts().reset_index()
     funnel_data.columns = ["Funnel_Name", "Count"]
