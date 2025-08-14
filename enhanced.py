@@ -69,7 +69,7 @@ def load_data_with_retry():
                 break
 
     st.error("Google Sheetsの読み込みに失敗しました。後ほど再試行してください。")
-    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 # Load data
 deals_df, stages_df, users_df, funnel_mapping_df = load_data_with_retry()
@@ -132,6 +132,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
     ) 
     # 日付列をdatetimeオブジェクトに変換
+    # 日付列をdatetime（Timestamp）に統一しておくのが重要
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
         '最終見積提出日', 'Create Date', '活動提案アクション', '実施予定日', 'Close Date',
@@ -140,35 +141,30 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     ]
     for col in date_columns:
         if col in merged_df.columns:
-            merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce')
+            merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce').dt.tz_localize(None)
+            
     # Stage ID判定とファネル名称付与の追加
+    # ▼ Stage/Funnelの付与：比較は型ブレを避けるため“文字列化”で合わせる
     def determine_stage_and_funnel(row, mapping_df):
-        pipeline = str(row.get('Pipeline', '')).strip()
-        #deal_stage = str(row.get('Deal Stage', '')).strip()
-        deal_stage = str(row.get('Stage ID', '')).strip()  # または適切な列名
-        
-        # Deal Stageが空欄またはnanの場合の処理
-        if deal_stage in ['', 'nan', 'None'] or pd.isna(row.get('Deal Stage')):
-            deal_stage = ''
-        
-        # 完全一致を先に試す
+        pipeline   = str(row.get('Pipeline', '')).strip()
+        deal_stage = str(row.get('Stage ID', '')).strip()  # ← 'Deal Stage' ではなく 'Stage ID'
+
+        # 完全一致（Pipeline & 取引ステージ）
         exact_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) & 
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
             (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
         ]
-        
         if not exact_match.empty:
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称']
-        
-        # 取引ステージが空欄の場合、Pipelineのみでマッチング
+
+        # 取引ステージが空欄時はPipelineのみで
         pipeline_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) & 
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
             (mapping_df['取引ステージ'].astype(str).str.strip() == '')
         ]
-        
         if not pipeline_match.empty:
             return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称']
-        
+
         return None, None
     
     # 各行にStage IDとファネル名称を付与
