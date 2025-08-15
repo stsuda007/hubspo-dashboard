@@ -447,14 +447,11 @@ display_kpis(filtered_df, start_date, end_date)
 
 st.divider()
 
-st.subheader("⚠️ デバッグ情報（マッピング失敗案件）")
+st.subheader("デバッグ情報（マッピング失敗案件）")
 debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
 
-if not debug_df.empty:
-    st.warning("以下の案件でファネルのマッピングに失敗しました。")
-    st.dataframe(debug_df[['Deal Name', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
-else:
-    st.success("すべての案件でファネルのマッピングに成功しました！")
+st.warning("案件のファネルマッピング情報")
+st.dataframe(debug_df[['Deal Name', 'Stage ID', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
 
 # ファネルチャートとバーチャートを横並びに配置
 col1, col2 = st.columns(2)
