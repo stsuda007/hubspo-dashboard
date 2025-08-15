@@ -130,7 +130,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
 
         # 2. Stage IDが欠損値（nan）または空欄の場合の処理
-        if deals_stage == nan or deals_stage == '':
+        if deals_stage == 'nan' or deals_stage == '':
             pipeline_match = mapping_df[
                 (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
                 (mapping_df['取引ステージ'].astype(str).str.strip() == '')
