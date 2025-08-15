@@ -118,21 +118,21 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             
     # ▼ 修正後のロジック ▼
     def determine_stage_and_funnel_with_debug(row, mapping_df):
-        pipeline_name = str(row.get('Pipeline (name)', '')).strip()
-        stage_id = str(row.get('Stage ID', '')).strip()
+        deals_pipeline = str(row.get('Pipeline (name)', '')).strip() #Dealsの各行にあるPipeline (name)列
+        deals_stage = str(row.get('Deal Stage (name)', '')).strip() #Dealsの各行にあるDeal Stage (name)列
         
         # 1. PipelineとStage IDの両方で完全一致を探す
         exact_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline_name) &
-            (mapping_df['取引ステージ'].astype(str).str.strip() == stage_id)
+            (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip() == deals_stage)
         ]
         if not exact_match.empty:
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
 
         # 2. Stage IDが欠損値（nan）または空欄の場合の処理
-        if stage_id == 'nan' or stage_id == '':
+        if deals_stage == nan or deals_stage == '':
             pipeline_match = mapping_df[
-                (mapping_df['Pipeline'].astype(str).str.strip() == pipeline_name) &
+                (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
                 (mapping_df['取引ステージ'].astype(str).str.strip() == '')
             ]
             if not pipeline_match.empty:
