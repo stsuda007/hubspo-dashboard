@@ -167,7 +167,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         if not pipeline_match.empty:
             return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称']
 
-        return None, None
+        return (None, None)
     
     # 各行にStage IDとファネル名称を付与
     funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel(row, funnel_mapping), axis=1)
