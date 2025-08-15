@@ -122,28 +122,29 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         deals_stage = str(row.get('Deal Stage (name)', '')).strip()
         
         # 1. PipelineとDeal Stageの両方で完全一致を探す
-        # `mapping_df`の'Pipeline'と'取引ステージ'列を、Dealsデータと照合する
         exact_match = mapping_df[
             (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
             (mapping_df['取引ステージ'].astype(str) == deals_stage)
         ]
         if not exact_match.empty:
-            # マッピング成功: 該当するファネルのStage IDと名称を返す
             debug_message = "Mapping Success!"
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
-
-        # 2. Stageが空欄または欠損値（'nan'）の場合、Pipelineのみで一致を探す
-        #if pd.isna(row.get('Deal Stage (name)')) or deals_stage == '':
-            #pipeline_match = mapping_df[
-                #(mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline)
-            #]
-            #if not pipeline_match.empty:
-                # マッピング成功: 該当するファネルのStage IDと名称を返す
-                #return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
-
-        # 3. マッピングが見つからなかった場合
+        
+        # 2. マッピングが見つからなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
         return None, None, debug_message
+
+    # Apply the mapping function to the merged dataframe
+    # This unpacks the three values returned by determine_stage_and_funnel_with_debug
+    # into new columns on the merged_df.
+    merged_df[['Funnel_Stage_ID', 'Funnel_Name', 'Funnel_Debug_Info']] = merged_df.apply(
+        lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping),
+        axis=1,
+        result_type='expand'
+    )
+    
+    # Return the processed dataframes to the main application
+    return merged_df, stages_df, funnel_mapping
 
 def get_fiscal_dates(today, fiscal_start_month=1):
     """
