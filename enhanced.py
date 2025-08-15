@@ -124,21 +124,21 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         # 1. PipelineとDeal Stageの両方で完全一致を探す
         # `mapping_df`の'Pipeline'と'取引ステージ'列を、Dealsデータと照合する
         exact_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
-            (mapping_df['取引ステージ'].astype(str).str.strip() == deals_stage)
+            (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
+            (mapping_df['取引ステージ'].astype(str) == deals_stage)
         ]
-        if not exact_match.empty:
+        #if not exact_match.empty:
             # マッピング成功: 該当するファネルのStage IDと名称を返す
-            return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
+            #return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
 
         # 2. Stageが空欄または欠損値（'nan'）の場合、Pipelineのみで一致を探す
-        if pd.isna(row.get('Deal Stage (name)')) or deals_stage == '':
-            pipeline_match = mapping_df[
-                (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline)
-            ]
-            if not pipeline_match.empty:
+        #if pd.isna(row.get('Deal Stage (name)')) or deals_stage == '':
+            #pipeline_match = mapping_df[
+                #(mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline)
+            #]
+            #if not pipeline_match.empty:
                 # マッピング成功: 該当するファネルのStage IDと名称を返す
-                return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
+                #return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
 
         # 3. マッピングが見つからなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
