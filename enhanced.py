@@ -129,7 +129,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         ]
         if not exact_match.empty:
             # マッピング成功: 該当するファネルのStage IDと名称を返す
-            debug_message = f"Mapping Success! {exact_match.iloc[0]['Stage ID']}"
+            debug_message = "Mapping Success!"
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
 
         # 2. Stageが空欄または欠損値（'nan'）の場合、Pipelineのみで一致を探す
