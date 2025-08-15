@@ -13,7 +13,6 @@ from gspread.exceptions import APIError
 st.set_page_config(layout="wide", page_title="HubSpotダッシュボード")
 
 # --- 設定値 ---
-# Google Sheetsの設定を辞書にまとめる
 CONFIG = {
     "scope": ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"],
     "deals_sheet": "Deals",
@@ -38,7 +37,8 @@ except KeyError:
     st.error("Google Sheetsのスプレッドシートキーが設定されていません。`st.secrets`に`SPREADSHEET_KEY`を設定してください。")
     st.stop()
 
-# --- Data fetching function (cached & with retry) ---
+# --- Functions (定義をまとめて配置) ---
+
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
 def load_data_with_retry():
     """
@@ -54,7 +54,6 @@ def load_data_with_retry():
             deals_data = pd.DataFrame(deals_ws.get_all_records())
             stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage ID", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
-            # 新しいファネルマッピングデータを追加
             funnel_mapping_raw = stages_ws.get("E1:H13")
             funnel_mapping = pd.DataFrame(funnel_mapping_raw[1:], columns=funnel_mapping_raw[0])
             return deals_data, stages_data, users_data, funnel_mapping
@@ -71,16 +70,7 @@ def load_data_with_retry():
     st.error("Google Sheetsの読み込みに失敗しました。後ほど再試行してください。")
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-# Load data
-deals_df, stages_df, users_df, funnel_mapping_df = load_data_with_retry()
 
-if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empty:
-    st.stop()
-
-# ▼ THIS IS THE CRITICAL LINE TO MOVE UP ▼
-merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
-
-# --- Data preprocessing ---
 def preprocess_data(deals, stages, users, funnel_mapping):
     """
     データの前処理を1つの関数にまとめる
@@ -132,7 +122,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         merged_df["Deal Type"]
         .apply(agg_anken_type)
         .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
-    ) 
+    )
     # 日付列をdatetimeオブジェクトに変換
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
@@ -170,15 +160,13 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         debug_message = f"Mapping failed. Pipeline: '{pipeline}', Stage ID: '{deal_stage}'"
         return None, None, debug_message
 
-    # ▼ ここに移動します ▼
     funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
     merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
     merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
     merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
-    # ▲ ここに移動します ▲
     
     return merged_df, stages_df, funnel_mapping
-# --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
+
 def get_fiscal_dates(today, fiscal_start_month=1):
     """
     Calculates the start and end dates for the current fiscal year and half-year
@@ -187,7 +175,6 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     current_year = today.year
     current_month = today.month
 
-    # --- Calculate fiscal year dates ---
     if current_month >= fiscal_start_month:
         fiscal_year_start = datetime(current_year, fiscal_start_month, 1).date()
         fiscal_year_end = datetime(current_year + 1, fiscal_start_month, 1).date() - timedelta(days=1)
@@ -195,23 +182,17 @@ def get_fiscal_dates(today, fiscal_start_month=1):
         fiscal_year_start = datetime(current_year - 1, fiscal_start_month, 1).date()
         fiscal_year_end = datetime(current_year, fiscal_start_month, 1).date() - timedelta(days=1)
 
-    # --- Calculate fiscal half-year dates ---
-    # Determine the half-year's start month and year
     if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
-        # First half of the fiscal year
         half_year_start = fiscal_year_start
     else:
-        # Second half of the fiscal year
         start_month_h2 = fiscal_start_month + 6
         if start_month_h2 > 12:
             start_month_h2 = start_month_h2 % 12
             start_year_h2 = fiscal_year_start.year + 1
         else:
             start_year_h2 = fiscal_year_start.year
-            
         half_year_start = datetime(start_year_h2, start_month_h2, 1).date()
 
-    # Determine the half-year's end month and year
     end_month = half_year_start.month + 6
     end_year = half_year_start.year
 
@@ -222,93 +203,9 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     half_year_end = datetime(end_year, end_month, 1).date() - timedelta(days=1)
 
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
-# --- Sidebar Filters ---
-st.sidebar.header("フィルタ")
-
-# 案件ステータスの選択
-if '受注/失注' in merged_df.columns:
-    deal_status_options = ["すべて"] + list(merged_df["受注/失注"].dropna().unique())
-    selected_deal_status = st.sidebar.selectbox("受注/失注", deal_status_options)
-else:
-    selected_deal_status = "すべて"
-
-# リードの選択
-lead_options = ["すべて"] + list(merged_df["リード経路"].dropna().unique())
-selected_lead_path = st.sidebar.selectbox("リード経路", lead_options)
-
-# 案件タイプの選択
-
-new_upsell = ["すべて"] + list(merged_df["Anken Type"].dropna().unique())
-selected_new_upsell = st.sidebar.selectbox("案件タイプ", new_upsell)
-
-# 営業担当者の選択
-sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
-selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_options, default=["すべて"])
-
-# 日付範囲の選択
-# Filter by a date range preset
-date_filter_preset = st.sidebar.radio(
-    "日付範囲のプリセット",
-    ("カスタム", "今半期", "今年度", "全期間")
-)
-
-# Get today's date for calculations
-today = datetime.now().date()
-
-# Calculate the dynamic dates
-# We need to import timedelta from datetime for this to work
-from datetime import timedelta
-fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today) #年度の計算
-date_col = 'Snapshot_date'
-min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
-max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
-
-# Set start and end dates based on the preset
-if date_filter_preset == "今半期":
-    start_date = half_year_start
-    end_date = half_year_end
-elif date_filter_preset == "今年度":
-    start_date = fiscal_year_start
-    end_date = fiscal_year_end
-elif date_filter_preset == "全期間":
-    start_date = min_date_val
-    end_date = max_date_val
-else: # "カスタム"
-    # Show the date input only for custom range
-    start_date, end_date = st.sidebar.date_input(
-        "カスタム日付範囲",
-        value=(min_date_val, max_date_val),
-        min_value=min_date_val,
-        max_value=max_date_val
-    )
-
-# --- Apply filters ---
-filtered_df = merged_df.copy()
-
-if selected_deal_status != "すべて":
-    filtered_df = filtered_df[filtered_df["受注/失注"] == selected_deal_status]
-
-if selected_lead_path != "すべて":
-    filtered_df = filtered_df[filtered_df["リード経路"] == selected_lead_path]
-
-if selected_new_upsell != "すべて":
-    filtered_df = filtered_df[filtered_df["Anken Type"] == selected_new_upsell]
-
-if "すべて" not in selected_sales_reps:
-    filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
-
-filtered_df = filtered_df[(filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)]
-# Snapshot_date が存在しないケースに備えてフォールバック
-date_col = 'Snapshot_date' if 'Snapshot_date' in filtered_df.columns else 'Create Date'
-filtered_df = filtered_df[
-    (filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)
-]
 
 
-
-
-# --- KPI Section ---
-def display_kpis(df):
+def display_kpis(df, start_date, end_date):
     st.subheader("主要KPI")
     st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
     won_deals_df = df[df['受注/失注'] == '受注'].copy()
@@ -332,28 +229,23 @@ def display_kpis(df):
         st.metric(label="平均案件期間", value=f"{avg_deal_duration:,.0f} 日")
 
 
-# --- Funnel Chart ---
 def create_funnel_chart(df, funnel_mapping_df):
     st.subheader("案件ステージ別ファネルチャート")
     if df.empty:
         st.info("データがありません。")
         return
 
-    # 並び順は Stage ID の数値昇順に（型を数値化しておく）
     fm = funnel_mapping_df.drop_duplicates('ファネル名称').copy()
     fm['Stage ID'] = pd.to_numeric(fm['Stage ID'], errors='coerce')
     stage_order = fm.sort_values('Stage ID')['ファネル名称'].tolist()
     
-    # ファネル名称でグループ化してカウント
     funnel_data = df["Funnel_Name"].dropna().value_counts().reset_index()
     funnel_data.columns = ["Funnel_Name", "Count"]
 
-    # Stage IDによる順序付け
     stage_order = funnel_mapping_df.drop_duplicates('ファネル名称').sort_values('Stage ID')['ファネル名称'].tolist()
     funnel_data['Funnel_Name'] = pd.Categorical(funnel_data['Funnel_Name'], categories=stage_order, ordered=True)
     funnel_data = funnel_data.sort_values("Funnel_Name", ascending=False)
     
-    # ファネルチャート作成（既存のコードと同様）
     fig = go.Figure(go.Funnel(
         y = funnel_data["Funnel_Name"],
         x = funnel_data["Count"],
@@ -362,33 +254,8 @@ def create_funnel_chart(df, funnel_mapping_df):
     ))
     fig.update_layout(height=500, width=800, margin=dict(t=0, b=0, l=0, r=0))
     st.plotly_chart(fig, use_container_width=True)
-    
-def create_funnel_chart_obsolete(df, stages_df):
-    st.subheader("案件ステージ別ファネルチャート")
-    if df.empty:
-        st.info("データがありません。")
-        return
-
-    # Deal Stageでグループ化してカウント
-    funnel_data = df["Stage Name"].value_counts().reset_index()
-    funnel_data.columns = ["Stage Name", "Count"]
-
-    # 適切な順序に並び替え
-    stage_order = stages_df["Stage Name"].tolist()
-    funnel_data['Stage Name'] = pd.Categorical(funnel_data['Stage Name'], categories=stage_order, ordered=True)
-    funnel_data = funnel_data.sort_values("Stage Name", ascending=False)
-    
-    fig = go.Figure(go.Funnel(
-        y = funnel_data["Stage Name"],
-        x = funnel_data["Count"],
-        textinfo = "value+percent initial",
-        marker = {"color": ["deepskyblue", "lightseagreen", "cadetblue", "teal", "dodgerblue", "steelblue", "skyblue", "powderblue", "lightblue", "lightsteelblue"]}
-    ))
-    fig.update_layout(height=500, width=800, margin=dict(t=0, b=0, l=0, r=0))
-    st.plotly_chart(fig, use_container_width=True)
 
 
-# --- Monthly Won Amount Bar Chart ---
 def create_monthly_bar_chart(df):
     st.subheader("月別受注金額")
     won_deals_df = df[df['受注/失注'] == '受注'].copy()
@@ -412,16 +279,13 @@ def create_monthly_bar_chart(df):
     st.plotly_chart(fig, use_container_width=True)
 
 
-# --- Function to create the deals pipeline chart (updated) ---
-def create_pipeline_chart(df):
+def create_pipeline_chart(df, start_date, end_date):
     st.subheader("案件パイプラインチャート")
     df_plot = df.copy()
     
     # 欠損値処理
     df_plot = df_plot.dropna(subset=['受注日'])
     
-    # Ensure 'Create Date' is of the same type as '初回商談実施日'
-    # Convert Timestamp objects to date objects
     df_plot['Create Date'] = pd.to_datetime(df_plot['Create Date']).dt.date
     
     # 案件開始日の代替処理
@@ -436,8 +300,6 @@ def create_pipeline_chart(df):
         st.info("プロット可能な案件がありませんでした。")
         return
 
-    # Now all values in the 'Start' column are of the same type,
-    # so sorting will work without a TypeError.
     df_plot = df_plot.sort_values('Start', ascending=False)
     
     fig = go.Figure()
@@ -481,7 +343,7 @@ def create_pipeline_chart(df):
             hoverinfo='text',
             hovertext=f"案件名: {row['Deal Name']}<br>金額: {text_label}"
         ))
-            
+        
         for mid_col, mid_label, mid_color, mid_symbol in [
             ('報告/提案日', '報告/提案日', 'green', 'diamond'),
             ('概算見積提出日', '概算見積提出日', 'purple', 'diamond')
@@ -518,34 +380,59 @@ def create_pipeline_chart(df):
 
     st.plotly_chart(fig, use_container_width=True)
 
-# --- Main app layout ---
-st.title("HubSpot Deals ダッシュボード")
+# ----------------------------------------
+# ▼ メインアプリケーションの実行部分 ▼
+# ----------------------------------------
 
-# KPIセクション
-display_kpis(filtered_df)
+# データの読み込み
+deals_df, stages_df, users_df, funnel_mapping_df = load_data_with_retry()
 
-st.divider()
+if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empty:
+    st.stop()
 
-####
-st.subheader("⚠️ デバッグ情報（マッピング失敗案件）")
+# データの前処理
+merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
 
-# Funnel_Debug_Infoに値が入っている行（マッピング失敗した行）を抽出
-debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
+# --- Sidebar Filters ---
+st.sidebar.header("フィルタ")
 
-if not debug_df.empty:
-    st.warning("以下の案件でファネルのマッピングに失敗しました。")
-    st.dataframe(debug_df[['Deal Name', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
+if '受注/失注' in merged_df.columns:
+    deal_status_options = ["すべて"] + list(merged_df["受注/失注"].dropna().unique())
+    selected_deal_status = st.sidebar.selectbox("受注/失注", deal_status_options)
 else:
-    st.success("すべての案件でファネルのマッピングに成功しました！")
+    selected_deal_status = "すべて"
 
-# ファネルチャートとバーチャートを横並びに配置
-col1, col2 = st.columns(2)
-with col1:
-    create_funnel_chart(filtered_df, funnel_mapping_df)
-with col2:
-    create_monthly_bar_chart(filtered_df)
-st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
-st.divider()
+lead_options = ["すべて"] + list(merged_df["リード経路"].dropna().unique())
+selected_lead_path = st.sidebar.selectbox("リード経路", lead_options)
 
-# パイプラインチャート
-create_pipeline_chart(filtered_df)
+new_upsell = ["すべて"] + list(merged_df["Anken Type"].dropna().unique())
+selected_new_upsell = st.sidebar.selectbox("案件タイプ", new_upsell)
+
+sales_rep_options = ["すべて"] + list(merged_df["Full Name"].dropna().unique())
+selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_options, default=["すべて"])
+
+# 日付範囲の選択
+date_filter_preset = st.sidebar.radio(
+    "日付範囲のプリセット",
+    ("カスタム", "今半期", "今年度", "全期間")
+)
+
+today = datetime.now().date()
+fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today)
+date_col = 'Snapshot_date'
+min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
+max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
+
+if date_filter_preset == "今半期":
+    start_date = half_year_start
+    end_date = half_year_end
+elif date_filter_preset == "今年度":
+    start_date = fiscal_year_start
+    end_date = fiscal_year_end
+elif date_filter_preset == "全期間":
+    start_date = min_date_val
+    end_date = max_date_val
+else:
+    start_date, end_date = st.sidebar.date_input(
+        "カスタム日付範囲",
+        value=(min_date_val, max_
