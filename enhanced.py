@@ -145,39 +145,38 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             
     # Stage ID判定とファネル名称付与の追加
     # ▼ Stage/Funnelの付与：比較は型ブレを避けるため“文字列化”で合わせる
-def determine_stage_and_funnel_with_debug(row, mapping_df):
-    pipeline = str(row.get('Pipeline', '')).strip()
-    deal_stage = str(row.get('Stage ID', '')).strip()
+    def determine_stage_and_funnel_with_debug(row, mapping_df):
+        pipeline = str(row.get('Pipeline', '')).strip()
+        deal_stage = str(row.get('Stage ID', '')).strip()
 
-    # 完全一致（Pipeline & 取引ステージ）
-    exact_match = mapping_df[
-        (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
-        (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
-    ]
-    if not exact_match.empty:
-        return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
+        # 完全一致（Pipeline & 取引ステージ）
+        exact_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
+        ]
+        if not exact_match.empty:
+            return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
 
-    # 取引ステージが空欄時はPipelineのみで
-    pipeline_match = mapping_df[
-        (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
-        (mapping_df['取引ステージ'].astype(str).str.strip() == '')
-    ]
-    if not pipeline_match.empty:
-        return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
+        # 取引ステージが空欄時はPipelineのみで
+        pipeline_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+        ]
+        if not pipeline_match.empty:
+            return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
 
-    # マッピングが見つからなかった場合、元の値とデバッグメッセージを返す
-    debug_message = f"Mapping failed. Pipeline: '{pipeline}', Stage ID: '{deal_stage}'"
-    return None, None, debug_message
+        # マッピングが見つからなかった場合、元の値とデバッグメッセージを返す
+        debug_message = f"Mapping failed. Pipeline: '{pipeline}', Stage ID: '{deal_stage}'"
+        return None, None, debug_message
 
-# 各行にStage ID、ファネル名称、デバッグメッセージを付与
-funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
-merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
-merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
-merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
-
-## updated merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
-## merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
-
+    # ここからが重要な変更点です
+    # `merged_df`が定義された後に、このコードを呼び出す必要があります。
+    funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
+    merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
+    merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
+    merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
+    
+    return merged_df, stages_df, funnel_mapping
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
     """
