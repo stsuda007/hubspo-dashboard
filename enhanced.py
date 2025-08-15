@@ -77,6 +77,9 @@ deals_df, stages_df, users_df, funnel_mapping_df = load_data_with_retry()
 if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empty:
     st.stop()
 
+# ▼ THIS IS THE CRITICAL LINE TO MOVE UP ▼
+merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
+
 # --- Data preprocessing ---
 def preprocess_data(deals, stages, users, funnel_mapping):
     """
