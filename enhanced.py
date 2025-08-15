@@ -127,9 +127,10 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
             (mapping_df['取引ステージ'].astype(str) == deals_stage)
         ]
-        #if not exact_match.empty:
+        if not exact_match.empty:
             # マッピング成功: 該当するファネルのStage IDと名称を返す
-            #return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
+            debug_message = f"Mapping Success! {exact_match.iloc[0]['Stage ID']}
+            return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
 
         # 2. Stageが空欄または欠損値（'nan'）の場合、Pipelineのみで一致を探す
         #if pd.isna(row.get('Deal Stage (name)')) or deals_stage == '':
