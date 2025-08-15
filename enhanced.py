@@ -435,4 +435,57 @@ elif date_filter_preset == "全期間":
 else:
     start_date, end_date = st.sidebar.date_input(
         "カスタム日付範囲",
-        value=(min_date_val, max_
+        value=(min_date_val, max_date_val),
+        min_value=min_date_val,
+        max_value=max_date_val
+    )
+
+# --- Apply filters ---
+filtered_df = merged_df.copy()
+
+if selected_deal_status != "すべて":
+    filtered_df = filtered_df[filtered_df["受注/失注"] == selected_deal_status]
+
+if selected_lead_path != "すべて":
+    filtered_df = filtered_df[filtered_df["リード経路"] == selected_lead_path]
+
+if selected_new_upsell != "すべて":
+    filtered_df = filtered_df[filtered_df["Anken Type"] == selected_new_upsell]
+
+if "すべて" not in selected_sales_reps:
+    filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
+
+date_col = 'Snapshot_date' if 'Snapshot_date' in filtered_df.columns else 'Create Date'
+filtered_df = filtered_df[
+    (filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)
+]
+
+
+# --- Main app layout ---
+st.title("HubSpot Deals ダッシュボード")
+
+# KPIセクション
+display_kpis(filtered_df, start_date, end_date)
+
+st.divider()
+
+st.subheader("⚠️ デバッグ情報（マッピング失敗案件）")
+debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
+
+if not debug_df.empty:
+    st.warning("以下の案件でファネルのマッピングに失敗しました。")
+    st.dataframe(debug_df[['Deal Name', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
+else:
+    st.success("すべての案件でファネルのマッピングに成功しました！")
+
+# ファネルチャートとバーチャートを横並びに配置
+col1, col2 = st.columns(2)
+with col1:
+    create_funnel_chart(filtered_df, funnel_mapping_df)
+with col2:
+    create_monthly_bar_chart(filtered_df)
+st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
+st.divider()
+
+# パイプラインチャート
+create_pipeline_chart(filtered_df, start_date, end_date)
