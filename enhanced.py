@@ -100,7 +100,6 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     # 受注金額のクレンジング
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
-    #deals_df["受注金額"] = (deals_df["受注金額"] / 10000).fillna(0)
 
     # データフレームのマージ
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
@@ -132,7 +131,6 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
     ) 
     # 日付列をdatetimeオブジェクトに変換
-    # 日付列をdatetime（Timestamp）に統一しておくのが重要
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
         '最終見積提出日', 'Create Date', '活動提案アクション', '実施予定日', 'Close Date',
@@ -169,12 +167,12 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         debug_message = f"Mapping failed. Pipeline: '{pipeline}', Stage ID: '{deal_stage}'"
         return None, None, debug_message
 
-    # ここからが重要な変更点です
-    # `merged_df`が定義された後に、このコードを呼び出す必要があります。
+    # ▼ ここに移動します ▼
     funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
     merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
     merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
     merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
+    # ▲ ここに移動します ▲
     
     return merged_df, stages_df, funnel_mapping
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
