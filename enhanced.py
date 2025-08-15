@@ -128,7 +128,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     # Stage ID判定とファネル名称付与の追加
     def determine_stage_and_funnel_with_debug(row, mapping_df):
         # 修正: 'Pipeline Name' と 'Stage ID' 列を参照
-        pipeline_name = str(row.get('Pipeline Name', '')).strip()
+        pipeline_name = str(row.get('Pipeline (Name)', '')).strip()
         stage_id = str(row.get('Stage ID', '')).strip()
 
         # 完全一致（Pipeline & 取引ステージ）
