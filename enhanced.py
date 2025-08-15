@@ -126,9 +126,67 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce').dt.tz_localize(None)
             
     # Stage ID判定とファネル名称付与の追加
+def preprocess_data(deals, stages, users, funnel_mapping):
+    """
+    データの前処理を1つの関数にまとめる
+    """
+    # ユーザーデータの前処理
+    users_df = users.copy()
+    users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
+    users_df = users_df.rename(columns={"ID": "User ID"})
+    
+    # 案件データの前処理
+    deals_df = deals.copy()
+    
+    # マージ用の列名を変更する前に、元の列名を保持する
+    # この処理はマージに必要なので残しておく
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stage ID"})
+
+    # 列を数値型に安全に変換
+    deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
+    deals_df["Stage ID"] = pd.to_numeric(deals_df["Stage ID"], errors="coerce")
+    stages_df = stages.copy()
+    stages_df["Stage ID"] = pd.to_numeric(stages_df["Stage ID"], errors="coerce")
+
+    # 受注金額のクレンジング
+    deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
+    deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
+
+    # データフレームのマージ
+    merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
+    merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
+
+    # --- 案件タイプの名寄せ ---
+    anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
+    def agg_anken_type(val) -> str:
+        if pd.isna(val): return "Other"
+        s = str(val).strip().lower()
+        if s in ("newbusiness", "new business", "new"): return "New"
+        if s in ("existingbusiness", "existing business", "upsell", "cross-sell", "cross sell", "expansion", "csアカウント", "cs導入サービス"): return "Upsell"
+        if s in ("renewal", "renew"): return "Renewal"
+        return "Other"
+    merged_df["Anken Type"] = (
+        merged_df["Deal Type"]
+        .apply(agg_anken_type)
+        .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
+    )
+
+    # 日付列をdatetimeオブジェクトに変換
+    date_columns = [
+        '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
+        '最終見積提出日', 'Create Date', '活動提案アクション', '実施予定日', 'Close Date',
+        '現地デモ実施日', '営業引継ぎ日', '撮像/解析完了日', '撮影日', '失注日',
+        'Snapshot_date', '治具手配日', '検証_開始日'
+    ]
+    for col in date_df.columns:
+        if col in merged_df.columns:
+            merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce').dt.tz_localize(None)
+            
+    # Stage ID判定とファネル名称付与の追加
     def determine_stage_and_funnel_with_debug(row, mapping_df):
-        # 修正: 'Pipeline Name' と 'Stage ID' 列を参照
-        pipeline_name = str(row.get('Pipeline (Name)', '')).strip()
+        # 修正: 'Pipeline (name)' と 'Stage ID' 列を参照
+        # deals_df.rename()で'Deal Stage (name)'は'Stage ID'に変わっている
+        pipeline_name = str(row.get('Pipeline (name)', '')).strip()
         stage_id = str(row.get('Stage ID', '')).strip()
 
         # 完全一致（Pipeline & 取引ステージ）
@@ -138,6 +196,15 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         ]
         if not exact_match.empty:
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
+        
+        # 'Stage ID'が空のケースを考慮して、'Pipeline'のみで一致するか確認
+        if stage_id == '':
+            pipeline_match = mapping_df[
+                (mapping_df['Pipeline'].astype(str).str.strip() == pipeline_name) &
+                (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+            ]
+            if not pipeline_match.empty:
+                return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
 
         # マッピングが見つからなかった場合、元の値とデバッグメッセージを返す
         debug_message = f"Mapping failed. Pipeline: '{pipeline_name}', Stage ID: '{stage_id}'"
