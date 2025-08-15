@@ -145,30 +145,35 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             
     # Stage ID判定とファネル名称付与の追加
     # ▼ Stage/Funnelの付与：比較は型ブレを避けるため“文字列化”で合わせる
-    def determine_stage_and_funnel(row, mapping_df):
-        pipeline   = str(row.get('Pipeline', '')).strip()
-        deal_stage = str(row.get('Stage ID', '')).strip()  # ← 'Deal Stage' ではなく 'Stage ID'
-        # デバッグ用に print を追加
-        print(f"Checking row: Pipeline='{pipeline}', Deal Stage='{deal_stage}'")
+def determine_stage_and_funnel_with_debug(row, mapping_df):
+    pipeline = str(row.get('Pipeline', '')).strip()
+    deal_stage = str(row.get('Stage ID', '')).strip()
 
-        # 完全一致（Pipeline & 取引ステージ）
-        exact_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
-            (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
-        ]
-        if not exact_match.empty:
-            return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称']
+    # 完全一致（Pipeline & 取引ステージ）
+    exact_match = mapping_df[
+        (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
+        (mapping_df['取引ステージ'].astype(str).str.strip() == deal_stage)
+    ]
+    if not exact_match.empty:
+        return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], None
 
-        # 取引ステージが空欄時はPipelineのみで
-        pipeline_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
-            (mapping_df['取引ステージ'].astype(str).str.strip() == '')
-        ]
-        if not pipeline_match.empty:
-            return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称']
+    # 取引ステージが空欄時はPipelineのみで
+    pipeline_match = mapping_df[
+        (mapping_df['Pipeline'].astype(str).str.strip() == pipeline) &
+        (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+    ]
+    if not pipeline_match.empty:
+        return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
 
-        return (None, None)
-    
+    # マッピングが見つからなかった場合、元の値とデバッグメッセージを返す
+    debug_message = f"Mapping failed. Pipeline: '{pipeline}', Stage ID: '{deal_stage}'"
+    return None, None, debug_message
+
+# 各行にStage ID、ファネル名称、デバッグメッセージを付与
+funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
+merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
+merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
+merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
     # 各行にStage IDとファネル名称を付与
     funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel(row, funnel_mapping), axis=1)
     merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
@@ -526,6 +531,18 @@ st.title("HubSpot Deals ダッシュボード")
 display_kpis(filtered_df)
 
 st.divider()
+
+####
+st.subheader("⚠️ デバッグ情報（マッピング失敗案件）")
+
+# Funnel_Debug_Infoに値が入っている行（マッピング失敗した行）を抽出
+debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
+
+if not debug_df.empty:
+    st.warning("以下の案件でファネルのマッピングに失敗しました。")
+    st.dataframe(debug_df[['Deal Name', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
+else:
+    st.success("すべての案件でファネルのマッピングに成功しました！")
 
 # ファネルチャートとバーチャートを横並びに配置
 col1, col2 = st.columns(2)
