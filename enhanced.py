@@ -139,7 +139,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
                 return pipeline_match.iloc[0]['Stage ID'], pipeline_match.iloc[0]['ファネル名称'], None
 
         # 3. マッピングが見つからなかった場合
-        debug_message = f"Mapping failed. Pipeline: '{pipeline_name}', Stage ID: '{stage_id}'"
+        debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
         return None, None, debug_message
 
     funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_debug(row, funnel_mapping), axis=1)
