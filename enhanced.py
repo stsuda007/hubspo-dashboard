@@ -174,12 +174,6 @@ funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel_with_deb
 merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
 merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
 merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
-    # 各行にStage IDとファネル名称を付与
-    funnel_results = merged_df.apply(lambda row: determine_stage_and_funnel(row, funnel_mapping), axis=1)
-    merged_df['Funnel_Stage_ID'] = [result[0] for result in funnel_results]
-    merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
-    
-    return merged_df, stages_df, funnel_mapping
 
 ## updated merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
 merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
