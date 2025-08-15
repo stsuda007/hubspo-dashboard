@@ -148,6 +148,8 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     def determine_stage_and_funnel(row, mapping_df):
         pipeline   = str(row.get('Pipeline', '')).strip()
         deal_stage = str(row.get('Stage ID', '')).strip()  # ← 'Deal Stage' ではなく 'Stage ID'
+        # デバッグ用に print を追加
+        print(f"Checking row: Pipeline='{pipeline}', Deal Stage='{deal_stage}'")
 
         # 完全一致（Pipeline & 取引ステージ）
         exact_match = mapping_df[
