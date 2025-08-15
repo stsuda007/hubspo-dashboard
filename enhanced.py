@@ -178,7 +178,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         '現地デモ実施日', '営業引継ぎ日', '撮像/解析完了日', '撮影日', '失注日',
         'Snapshot_date', '治具手配日', '検証_開始日'
     ]
-    for col in date_df.columns:
+    for col in date_columns:
         if col in merged_df.columns:
             merged_df[col] = pd.to_datetime(merged_df[col], errors='coerce').dt.tz_localize(None)
             
