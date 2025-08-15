@@ -533,6 +533,8 @@ with col2:
     create_monthly_bar_chart(filtered_df)
 
 st.divider()
+st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
+st.dataframe(filtered_df)
 
 # パイプラインチャート
 create_pipeline_chart(filtered_df)
