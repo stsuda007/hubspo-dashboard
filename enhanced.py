@@ -176,7 +176,7 @@ merged_df['Funnel_Name'] = [result[1] for result in funnel_results]
 merged_df['Funnel_Debug_Info'] = [result[2] for result in funnel_results]
 
 ## updated merged_df, stages_df = preprocess_data(deals_df, stages_df, users_df)
-merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
+## merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
 
 # --- Helper function for dynamic date ranges　年度計算 fiscal_start_monthは年度始まりの月 ---
 def get_fiscal_dates(today, fiscal_start_month=1):
