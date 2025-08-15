@@ -89,7 +89,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     
     # 案件データの前処理
     deals_df = deals.copy()
-    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage": "Stage ID"})
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stage ID"})
 
     # 列を数値型に安全に変換
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
@@ -531,10 +531,8 @@ with col1:
     create_funnel_chart(filtered_df, funnel_mapping_df)
 with col2:
     create_monthly_bar_chart(filtered_df)
-
-st.divider()
 st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
-st.dataframe(filtered_df)
+st.divider()
 
 # パイプラインチャート
 create_pipeline_chart(filtered_df)
