@@ -222,7 +222,7 @@ def create_funnel_chart(df, funnel_mapping_df):
 
     stage_order = funnel_mapping_df.drop_duplicates('ファネル名称').sort_values('Stage ID')['ファネル名称'].tolist()
     funnel_data['Funnel_Name'] = pd.Categorical(funnel_data['Funnel_Name'], categories=stage_order, ordered=True)
-    funnel_data = funnel_data.sort_values("Funnel_Name", ascending=True)
+    funnel_data = funnel_data.sort_values("Funnel_Name", ascending=False)
     
     fig = go.Figure(go.Funnel(
         y = funnel_data["Funnel_Name"],
