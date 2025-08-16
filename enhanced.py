@@ -129,28 +129,39 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         deals_pipeline = str(row.get('Pipeline (name)', ''))
         deals_stage = str(row.get('Stagename', ''))
         
-        # 1. PipelineとDeal Stageの両方で完全一致を探す
+        # 1. Pipelineと取引ステージの両方で完全一致を探す
         exact_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
-            (mapping_df['取引ステージ'].astype(str) == deals_stage)
+            (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip() == deals_stage)
         ]
         if not exact_match.empty:
-            debug_message = "Mapping Success!: "+ exact_match.iloc[0]['ファネル名称']
+            debug_message = "Mapping Success!: " + exact_match.iloc[0]['ファネル名称']
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
-        
-        # 2. Pipelineが一致し、かつ取引ステージが空の行を探す
-        #    (例: deals_stageを無視して、"案件化前"や"成約"に紐づける)
-        empty_stage_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
+
+        # 2. Pipelineが一致し、取引ステージが空の行を探す（案件化前、成約）
+        empty_stage_mapping = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
             (mapping_df['取引ステージ'].astype(str).str.strip() == '')
         ]
-        if not empty_stage_match.empty:
-            debug_message = "Mapping Success (empty stage)!: " + empty_stage_match.iloc[0]['ファネル名称']
-            return empty_stage_match.iloc[0]['Stage ID'], empty_stage_match.iloc[0]['ファネル名称'], debug_message
+        if not empty_stage_mapping.empty:
+            debug_message = "Mapping Success (empty stage)!: " + empty_stage_mapping.iloc[0]['ファネル名称']
+            return empty_stage_mapping.iloc[0]['Stage ID'], empty_stage_mapping.iloc[0]['ファネル名称'], debug_message
+        
+        # 3. ファジーマッチ（部分一致）のロジック
+        fuzzy_match_rows = mapping_df[
+            (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip().str.len() > 0)
+        ]
 
-        # 3. 一致しなかった場合
+        for index, mapping_row in fuzzy_match_rows.iterrows():
+            mapping_stage = mapping_row['取引ステージ'].strip()
+            if (deals_stage in mapping_stage) or (mapping_stage in deals_stage):
+                debug_message = "Mapping Success (fuzzy match)!: " + mapping_row['ファネル名称']
+                return mapping_row['Stage ID'], mapping_row['ファネル名称'], debug_message
+
+        # 4. どの条件にも一致しなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
-        return None, None, debug_message
+        return None, None, debug_df
     
     # Apply the mapping function to the merged dataframe
     # This unpacks the three values returned by determine_stage_and_funnel_with_debug
