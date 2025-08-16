@@ -130,7 +130,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     def determine_stage_and_funnel_with_debug(row, mapping_df):
         deals_pipeline = str(row.get('Pipeline (name)', ''))
         deals_stage = str(row.get('Stagename', ''))
-        
+        st.write("取引ステージユニーク値:", mapping_df['取引ステージ'].unique())
         # 1. Pipelineと取引ステージの両方で完全一致を探す
         exact_match = mapping_df[
             (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
