@@ -90,7 +90,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
-    merged_df = merged_df.merge(stages_df, left_on="Deal Stage No", right_on="Stage No", how="left")
+    merged_df = merged_df.merge(stages_df, left_on="Stagename", right_on="Stage Name", how="left")
 
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
