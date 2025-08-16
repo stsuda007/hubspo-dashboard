@@ -457,10 +457,9 @@ display_kpis(filtered_df, start_date, end_date)
 st.divider()
 
 st.subheader("デバッグ情報（マッピング）")
-debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
-
+# debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
 st.warning("案件のファネルマッピング情報")
-st.dataframe(debug_df[['Deal Name', 'Stage ID', 'Pipeline', 'Deal Stage', 'Funnel_Debug_Info']])
+st.dataframe(debug_df[['Deal Name', 'Stage No', 'Pipeline', 'Stagename', 'Funnel_Debug_Info']])
 
 # ファネルチャートとバーチャートを横並びに配置
 col1, col2 = st.columns(2)
