@@ -74,17 +74,19 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     """
     データの前処理を1つの関数にまとめる
     """
+
     users_df = users.copy()
     users_df["Full Name"] = users_df["Last Name"].fillna("") + " " + users_df["First Name"].fillna("")
     users_df = users_df.rename(columns={"ID": "User ID"})
     
     deals_df = deals.copy()
-    # 💡 修正: Deal Stage (name)をStagenameに、Deal stageをStage Noにリネーム
+    
+    # 💡 修正点: 列名を最初にリネームします。
     deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename", "Deal stage": "Stage No"})
     
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
     
-    # 💡 修正: Deal stageをStage Noにリネームしたので、変換もStage Noで行う
+    # 💡 修正点: リネーム後、新しい列名 "Stage No" を使って数値変換します。
     deals_df["Stage No"] = pd.to_numeric(deals_df["Stage No"], errors="coerce")
     
     stages_df = stages.copy()
@@ -95,7 +97,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
 
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     
-    # 💡 修正: リネームした`Stage No`列をキーとして使用
+    # 💡 修正点: リネームした`Stage No`列をキーとして使用
     merged_df = merged_df.merge(stages_df, on="Stage No", how="left")
 
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
