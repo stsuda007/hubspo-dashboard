@@ -139,10 +139,8 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
         
         # 2. Pipelineのみで一致を探す
-        deals_stage = ""
         part_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
-            (mapping_df['取引ステージ'].astype(str) == deals_stage)
+            (mapping_df['Pipeline'].astype(str) == deals_pipeline) 
         ]    
 
         if not part_match.empty:
