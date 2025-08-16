@@ -140,8 +140,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         
         # 2. Pipelineのみで一致を探す
         part_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str) == deals_pipeline) & 
-            (mapping_df['取引ステージ'].astype(str) == deals_stage)
+            (mapping_df['Pipeline'].astype(str) == deals_pipeline) 
         ]    
     
         # 💡 修正点: part_matchが空ではない場合に、適切な情報を返す
