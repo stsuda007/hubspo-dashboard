@@ -163,7 +163,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
 
         # 4. どの条件にも一致しなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
-        return None, None, debug_df
+        return None, None, debug_message
     
     # Apply the mapping function to the merged dataframe
     # This unpacks the three values returned by determine_stage_and_funnel_with_debug
