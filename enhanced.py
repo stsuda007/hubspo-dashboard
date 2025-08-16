@@ -82,7 +82,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     deals_df = deals.copy()
     
     # 💡 修正点: 列名を最初にリネームします。
-    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename", "Deal stage": "Stage No"})
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename", "Deal Stage": "Stage No"})
     
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
     
