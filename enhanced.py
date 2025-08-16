@@ -54,7 +54,7 @@ def load_data_with_retry():
             deals_data = pd.DataFrame(deals_ws.get_all_records())
             stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage No", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
-            funnel_mapping_raw = stages_ws.get("E1:H13")
+            funnel_mapping_raw = stages_ws.get("E1:H14")
             funnel_mapping = pd.DataFrame(funnel_mapping_raw[1:], columns=funnel_mapping_raw[0])
             return deals_data, stages_data, users_data, funnel_mapping
 
