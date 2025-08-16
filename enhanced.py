@@ -118,8 +118,8 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             
     # ▼ 修正後のロジック ▼
     def determine_stage_and_funnel_with_debug(row, mapping_df):
-        deals_pipeline = str(row.get('Pipeline (name)', '')).strip()
-        deals_stage = str(row.get('Deal Stage (name)', '')).strip()
+        deals_pipeline = str(row.get('Pipeline (name)', ''))
+        deals_stage = str(row.get('Deal Stage (name)', ''))
         
         # 1. PipelineとDeal Stageの両方で完全一致を探す
         exact_match = mapping_df[
