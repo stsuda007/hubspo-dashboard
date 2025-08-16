@@ -138,15 +138,21 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             debug_message = "Mapping Success!: "+ exact_match.iloc[0]['ファネル名称']
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
         
-        # 2. 完全一致ではない場合
-        part_match = mapping_df[mapping_df['Pipeline'].astype(str) == deals_pipeline]
+        # 2. Pipelineのみで一致を探す
+        part_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str) == deals_pipeline) & 
+            (mapping_df['取引ステージ'].astype(str) == deals_stage)
+        ]    
+    
+        # 💡 修正点: part_matchが空ではない場合に、適切な情報を返す
         if not part_match.empty:
-            debug_message = "Mapping Success (partial)!: "+ parth_match.iloc[0]['ファネル名称']
+            debug_message = "Mapping Success (partial)!: " + part_match.iloc[0]['ファネル名称']
             return part_match.iloc[0]['Stage ID'], part_match.iloc[0]['ファネル名称'], debug_message
+
         # 3. 一致しなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
         return None, None, debug_message
-
+    
     # Apply the mapping function to the merged dataframe
     # This unpacks the three values returned by determine_stage_and_funnel_with_debug
     # into new columns on the merged_df.
