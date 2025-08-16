@@ -130,7 +130,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     def determine_stage_and_funnel_with_debug(row, mapping_df):
         deals_pipeline = str(row.get('Pipeline (name)', ''))
         deals_stage = str(row.get('Stagename', ''))
-        st.write("取引ステージユニーク値:", mapping_df['取引ステージ'].unique())
+        
         # 1. Pipelineと取引ステージの両方で完全一致を探す
         exact_match = mapping_df[
             (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
@@ -491,7 +491,8 @@ with col1:
     create_funnel_chart(filtered_df, funnel_mapping_df)
 with col2:
     create_monthly_bar_chart(filtered_df)
-st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
+st.write("Funnel_Name 列のユニークな値:", deals_df["Funnel_Name"].dropna().unique())
+st.write("Funnel_Name Mappingのユニークな値:", funnel_mapping_df["ファネル名称"].unique())
 st.divider()
 
 # パイプラインチャート
