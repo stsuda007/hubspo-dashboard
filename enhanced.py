@@ -143,7 +143,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         # 2. Pipelineが一致し、取引ステージが空の行を探す（案件化前、成約）
         empty_stage_mapping = mapping_df[
             (mapping_df['Pipeline'].astype(str).str.strip() == deals_pipeline) &
-            (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+            (mapping_df['取引ステージ'].fillna('').astype(str).str.strip() == '')
         ]
         if not empty_stage_mapping.empty:
             debug_message = "Mapping Success (empty stage)!: " + empty_stage_mapping.iloc[0]['ファネル名称']
