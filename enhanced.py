@@ -138,14 +138,15 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             debug_message = "Mapping Success!: "+ exact_match.iloc[0]['ファネル名称']
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
         
-        # 2. Pipelineのみで一致を探す
-        part_match = mapping_df[
-            (mapping_df['Pipeline'].astype(str) == deals_pipeline) 
-        ]    
-
-        if not part_match.empty:
-            debug_message = "Mapping Success (partial)!: " + part_match.iloc[0]['ファネル名称']
-            return part_match.iloc[0]['Stage ID'], part_match.iloc[0]['ファネル名称'], debug_message
+        # 2. Pipelineが一致し、かつ取引ステージが空の行を探す
+        #    (例: deals_stageを無視して、"案件化前"や"成約"に紐づける)
+        empty_stage_match = mapping_df[
+            (mapping_df['Pipeline'].astype(str) == deals_pipeline) &
+            (mapping_df['取引ステージ'].astype(str).str.strip() == '')
+        ]
+        if not empty_stage_match.empty:
+            debug_message = "Mapping Success (empty stage)!: " + empty_stage_match.iloc[0]['ファネル名称']
+            return empty_stage_match.iloc[0]['Stage ID'], empty_stage_match.iloc[0]['ファネル名称'], debug_message
 
         # 3. 一致しなかった場合
         debug_message = f"Mapping failed. Pipeline (name): '{deals_pipeline}', Deal Stage (name): '{deals_stage}'"
