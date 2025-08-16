@@ -52,7 +52,7 @@ def load_data_with_retry():
             users_ws = gc.open_by_key(SPREADSHEET_KEY).worksheet(CONFIG["users_sheet"])
 
             deals_data = pd.DataFrame(deals_ws.get_all_records())
-            stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage ID", "Stage Name"])
+            stages_data = pd.DataFrame(stages_ws.get("A2:B23"), columns=["Stage No", "Stage Name"])
             users_data = pd.DataFrame(users_ws.get_all_records())
             funnel_mapping_raw = stages_ws.get("E1:H13")
             funnel_mapping = pd.DataFrame(funnel_mapping_raw[1:], columns=funnel_mapping_raw[0])
@@ -82,15 +82,15 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename"})
 
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
-    deals_df["Stagename"] = pd.to_numeric(deals_df["Stagename"], errors="coerce")
+    # deals_df["Stagename"] = pd.to_numeric(deals_df["Stagename"], errors="coerce")
     stages_df = stages.copy()
-    stages_df["Stagename"] = pd.to_numeric(stages_df["Stagename"], errors="coerce")
+    stages_df["Stage No"] = pd.to_numeric(stages_df["Stage No"], errors="coerce")
 
     deals_df['受注金額'] = deals_df['受注金額'].astype(str).str.replace(r'[^\d]', '', regex=True)
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
-    merged_df = merged_df.merge(stages_df, on="Stagename", how="left")
+    merged_df = merged_df.merge(stages_df, on="Stage No", how="left")
 
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
