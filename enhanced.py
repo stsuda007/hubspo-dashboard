@@ -79,10 +79,14 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     users_df = users_df.rename(columns={"ID": "User ID"})
     
     deals_df = deals.copy()
-    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename"})
-
+    # 💡 修正: Deal Stage (name)をStagenameに、Deal stageをStage Noにリネーム
+    deals_df = deals_df.rename(columns={"Deal owner": "User ID", "Deal Stage (name)": "Stagename", "Deal stage": "Stage No"})
+    
     deals_df["User ID"] = pd.to_numeric(deals_df["User ID"], errors="coerce")
-    deals_df["Deal Stage"] = pd.to_numeric(deals_df["Deal stage"], errors="coerce")
+    
+    # 💡 修正: Deal stageをStage Noにリネームしたので、変換もStage Noで行う
+    deals_df["Stage No"] = pd.to_numeric(deals_df["Stage No"], errors="coerce")
+    
     stages_df = stages.copy()
     stages_df["Stage No"] = pd.to_numeric(stages_df["Stage No"], errors="coerce")
 
@@ -90,7 +94,9 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     deals_df["受注金額"] = pd.to_numeric(deals_df["受注金額"], errors="coerce")
 
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
-    merged_df = merged_df.merge(stages_df, left_on="Deal stage", right_on="Stage No", how="left")
+    
+    # 💡 修正: リネームした`Stage No`列をキーとして使用
+    merged_df = merged_df.merge(stages_df, on="Stage No", how="left")
 
     anken_type_categories = ["New", "Upsell", "Renewal", "Other"]
     def agg_anken_type(val) -> str:
