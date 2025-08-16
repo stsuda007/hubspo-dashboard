@@ -88,7 +88,9 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     
     # 💡 修正点: リネーム後、新しい列名 "Stage No" を使って数値変換します。
     deals_df["Stage No"] = pd.to_numeric(deals_df["Stage No"], errors="coerce")
-    
+    deals_df['Pipeline (name)'] = deals_df['Pipeline (name)'].astype(str).str.strip()
+    deals_df['Stagename'] = deals_df['Stagename'].astype(str).str.strip()
+
     stages_df = stages.copy()
     stages_df["Stage No"] = pd.to_numeric(stages_df["Stage No"], errors="coerce")
 
@@ -113,7 +115,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
         .apply(agg_anken_type)
         .astype(pd.CategoricalDtype(categories=anken_type_categories, ordered=True))
     )
-
+    
     date_columns = [
         '初回商談実施日', '受注日', '受注目標日', '有償ライセンス発行', '概算見積提出日', '報告/提案日',
         '最終見積提出日', 'Create Date', '活動提案アクション', '実施予定日', 'Close Date',
