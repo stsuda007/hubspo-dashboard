@@ -127,7 +127,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             (mapping_df['取引ステージ'].astype(str) == deals_stage)
         ]
         if not exact_match.empty:
-            debug_message = "Mapping Success!"
+            debug_message = "Mapping Success!: "+ exact_match.iloc[0]['ファネル名称']
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
         
         # 2. マッピングが見つからなかった場合
