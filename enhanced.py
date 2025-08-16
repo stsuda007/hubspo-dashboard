@@ -139,7 +139,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
             return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
         
         # 2. 完全一致ではない場合
-        part_match = mapping_df[mapping_df['Pipeline']astype(str) == deals_pipeline]
+        part_match = mapping_df[mapping_df['Pipeline'].astype(str) == deals_pipeline]
             if not part_match.empty:
                 debug_message = "Mapping Success (partial)!: "+ exact_match.iloc[0]['ファネル名称']
                 return exact_match.iloc[0]['Stage ID'], exact_match.iloc[0]['ファネル名称'], debug_message
