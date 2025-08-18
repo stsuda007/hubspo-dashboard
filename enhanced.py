@@ -484,7 +484,7 @@ else:
         "カスタム日付範囲",
         value=(min_date_val, max_date_val),
         min_value=start_date,
-        max_value=end_date,
+        max_value=end_date
         #min_value=min_date_val,
         #max_value=max_date_val
     )
