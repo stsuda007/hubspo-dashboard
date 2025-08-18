@@ -229,14 +229,14 @@ def get_fiscal_dates(today, fiscal_start_month=1): #fiscal_start_monthは年度�
     else:
         quarter_start_year = fiscal_year_start.year if quarter_start_month >= fiscal_start_month else fiscal_year_start.year + 1
         
-    quarter_start = datetime.datetime(quarter_start_year, quarter_start_month, 1).date()
+    quarter_start = datetime(quarter_start_year, quarter_start_month, 1).date()
 
     end_month = quarter_start.month + 3
     end_year = quarter_start.year
     if end_month > 12:
         end_month -= 12
         end_year += 1
-    quarter_end = datetime.date(datetime.datetime(end_year, end_month, 1)) - datetime.timedelta(days=1)
+    quarter_end = datetime(end_year, end_month, 1) - timedelta(days=1)
 
     #今月の初日と最後の計算
     month_start = datetime(current_year, current_month, 1).date()
