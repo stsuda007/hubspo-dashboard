@@ -185,19 +185,19 @@ def get_fiscal_dates(today, fiscal_start_month=1):
 
     # 会計年度の開始と終了を計算
     if current_month >= fiscal_start_month:
-        fiscal_year_start = datetime.date(datetime.datetime(current_year, fiscal_start_month, 1))
+        fiscal_year_start = datetime.datetime(current_year, fiscal_start_month, 1).date()
     else:
-        fiscal_year_start = datetime.date(datetime.datetime(current_year - 1, fiscal_start_month, 1))
+        fiscal_year_start = datetime.datetime(current_year - 1, fiscal_start_month, 1)).date()
 
-    fiscal_year_end = datetime.date(datetime.datetime(fiscal_year_start.year + 1, fiscal_start_month, 1)) - datetime.timedelta(days=1)
+    fiscal_year_end = datetime.datetime(fiscal_year_start.year + 1, fiscal_start_month, 1).date() - datetime.timedelta(days=1)
 
     # 半期の開始と終了を計算
     if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
         half_year_start = fiscal_year_start
     else:
-        half_year_start = datetime.date(datetime.datetime(fiscal_year_start.year, fiscal_start_month + 6, 1))
+        half_year_start = datetime.datetime(fiscal_year_start.year, fiscal_start_month + 6, 1).date()
     
-    half_year_end = datetime.date(datetime.datetime(half_year_start.year, half_year_start.month + 6, 1)) - datetime.timedelta(days=1)
+    half_year_end = datetime.datetime(half_year_start.year, half_year_start.month + 6, 1).date() - datetime.timedelta(days=1)
 
     # 現在の月の四半期の開始月を計算
     # 四半期は3ヶ月ごと
@@ -221,14 +221,14 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     if quarter_start_month < fiscal_start_month:
         quarter_start_year += 1
         
-    quarter_start = datetime.date(datetime.datetime(quarter_start_year, quarter_start_month, 1))
+    quarter_start = datetime.datetime(quarter_start_year, quarter_start_month, 1).date()
 
     end_month = quarter_start.month + 3
     end_year = quarter_start.year
     if end_month > 12:
         end_month -= 12
         end_year += 1
-    quarter_end = datetime.date(datetime.datetime(end_year, end_month, 1)) - datetime.timedelta(days=1)
+    quarter_end = datetime.datetime(end_year, end_month, 1).date() - datetime.timedelta(days=1)
     
     return (
         fiscal_year_start, fiscal_year_end,
