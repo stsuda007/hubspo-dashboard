@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
 
