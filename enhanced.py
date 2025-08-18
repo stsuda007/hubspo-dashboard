@@ -231,7 +231,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
         end_year += 1
     quarter_end = datetime.datetime(end_year, end_month, 1).date() - timedelta(days=1)
     
-    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end, start_month, end_month
+    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end
 
 def display_kpis(df, start_date, end_date):
     st.subheader("主要KPI")
@@ -446,14 +446,17 @@ date_filter_preset = st.sidebar.radio(
 )
 
 today = date.today()
-fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, qtr_start, qtr_end, month_start, month_end = get_fiscal_dates(today)
+fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, qtr_start, qtr_end = get_fiscal_dates(today)
 date_col = 'Snapshot_date'
 min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
 max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
 
 if date_filter_preset == "今月":
-    start_date = month_start
-    end_date = month_end
+    start_date = datetime.datetime(today.year, today.month, 1).date()
+    if today.month == 12:
+        end_date = datetime(today.year, 12, 31).date()
+    else:
+        end_date = datetime.datetime(today.year, today.month+1,1).date() - timedelta(days=1)
 elif date_filter_preset == "今四半期":
     start_date = qtr_start
     end_date = qtr_end
