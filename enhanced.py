@@ -176,7 +176,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     
     # Return the processed dataframes to the main application
     return merged_df, stages_df, funnel_mapping
-def get_fiscal_dates_and_quarter(today, fiscal_start_month=4):
+def get_fiscal_dates(today, fiscal_start_month=1):
     """
     指定された日付と会計年度の開始月に基づいて、会計年度、半期、四半期の開始日と終了日を計算します。
     """
