@@ -229,7 +229,7 @@ def get_fiscal_dates(today, fiscal_start_month=1): #fiscal_start_monthは年度�
     else:
         quarter_start_year = fiscal_year_start.year if quarter_start_month >= fiscal_start_month else fiscal_year_start.year + 1
         
-    quarter_start = datetime.date(datetime.datetime(quarter_start_year, quarter_start_month, 1))
+    quarter_start = datetime.datetime(quarter_start_year, quarter_start_month, 1).date()
 
     end_month = quarter_start.month + 3
     end_year = quarter_start.year
