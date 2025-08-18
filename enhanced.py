@@ -492,7 +492,7 @@ if selected_new_upsell != "すべて":
 if "すべて" not in selected_sales_reps:
     filtered_df = filtered_df[filtered_df["Full Name"].isin(selected_sales_reps)]
 
-date_col = 'Snapshot_date' if 'Snapshot_date' in filtered_df.columns else 'Create Date'
+# date_col = 'Snapshot_date' if 'Snapshot_date' in filtered_df.columns else 'Create Date'
 filtered_df = filtered_df[
     (filtered_df[date_col].dt.date >= start_date) & (filtered_df[date_col].dt.date <= end_date)
 ]
@@ -508,9 +508,9 @@ st.divider()
 
 st.subheader("デバッグ情報（マッピング）")
 # debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
-debug_df = filtered_df.copy()
-st.warning("案件のファネルマッピング情報")
-st.dataframe(debug_df[['Deal Name', 'Anken Type', 'Stage No', 'Stagename', 'Funnel_Stage_ID', 'Funnel_Name', 'Funnel_Debug_Info']])
+# debug_df = filtered_df.copy()
+# st.warning("案件のファネルマッピング情報")
+# st.dataframe(debug_df[['Deal Name', 'Anken Type', 'Stage No', 'Stagename', 'Funnel_Stage_ID', 'Funnel_Name', 'Funnel_Debug_Info']])
 
 # ファネルチャートとバーチャートを横並びに配置
 col1, col2 = st.columns(2)
