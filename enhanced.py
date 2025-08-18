@@ -230,11 +230,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
         end_year += 1
     quarter_end = datetime.datetime(end_year, end_month, 1).date() - datetime.timedelta(days=1)
     
-    return (
-        fiscal_year_start, fiscal_year_end,
-        half_year_start, half_year_end,
-        quarter_start, quarter_end
-    )
+    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end, start_month, end_month
 
 def display_kpis(df, start_date, end_date):
     st.subheader("主要KPI")
