@@ -457,10 +457,10 @@ max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna(
 if date_filter_preset == "今月":
     start_date = month_start
     end_date = month_end
-if date_filter_preset == "今四半期":
+elif date_filter_preset == "今四半期":
     start_date = qtr_start
     end_date = qtr_end
-if date_filter_preset == "今半期":
+elif date_filter_preset == "今半期":
     start_date = half_year_start
     end_date = half_year_end
 elif date_filter_preset == "今年度":
