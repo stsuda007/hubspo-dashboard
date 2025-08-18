@@ -197,8 +197,8 @@ def get_fiscal_dates(today, fiscal_start_month=1):
         half_year_start = fiscal_year_start
     else:
         half_year_start = datetime.datetime(fiscal_year_start.year, fiscal_start_month + 6, 1).date()
-    
-    half_year_end = datetime.datetime(half_year_start.year, half_year_start.month + 6, 1).date() - timedelta(days=1)
+    if (half_year_start.month + 6) > 12:
+        half_year_end = datetime.datetime(half_year_start.year + 1, (half_year_start.month + 6)-12 , 1).date() - timedelta(days=1)  
 
     # 現在の月の四半期の開始月を計算
     # 四半期は3ヶ月ごと
