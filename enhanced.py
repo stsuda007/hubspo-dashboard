@@ -189,7 +189,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     else:
         fiscal_year_start = datetime(current_year - 1, fiscal_start_month, 1).date()
 
-    fiscal_year_end = datetime(fiscal_year_start.year + 1, fiscal_start_month, 1).date() - datetime.timedelta(days=1)
+    fiscal_year_end = datetime(fiscal_year_start.year + 1, fiscal_start_month, 1).date() - timedelta(days=1)
 
     # 半期の開始と終了を計算
     if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
@@ -197,7 +197,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     else:
         half_year_start = datetime(fiscal_year_start.year, fiscal_start_month + 6, 1).date()
     
-    half_year_end = datetime(half_year_start.year, half_year_start.month + 6, 1).date() - datetime.timedelta(days=1)
+    half_year_end = datetime(half_year_start.year, half_year_start.month + 6, 1).date() - timedelta(days=1)
 
     # 現在の月の四半期の開始月を計算
     # 四半期は3ヶ月ごと
@@ -228,7 +228,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     if end_month > 12:
         end_month -= 12
         end_year += 1
-    quarter_end = datetime(end_year, end_month, 1).date() - datetime.timedelta(days=1)
+    quarter_end = datetime(end_year, end_month, 1).date() - timedelta(days=1)
     
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end, start_month, end_month
 
