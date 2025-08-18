@@ -444,7 +444,7 @@ date_filter_preset = st.sidebar.radio(
     ("今月","今四半期", "今半期", "今年度", "全期間","カスタム")
 )
 
-today = datetime.now().date()
+today = date.today()
 fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, qtr_start, qtr_end, month_start, month_end = get_fiscal_dates(today)
 date_col = 'Snapshot_date'
 min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
