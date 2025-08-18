@@ -187,7 +187,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     if current_month >= fiscal_start_month:
         fiscal_year_start = datetime.datetime(current_year, fiscal_start_month, 1).date()
     else:
-        fiscal_year_start = datetime.datetime(current_year - 1, fiscal_start_month, 1)).date()
+        fiscal_year_start = datetime.datetime(current_year - 1, fiscal_start_month, 1).date()
 
     fiscal_year_end = datetime.datetime(fiscal_year_start.year + 1, fiscal_start_month, 1).date() - datetime.timedelta(days=1)
 
