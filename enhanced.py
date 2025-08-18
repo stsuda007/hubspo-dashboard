@@ -177,7 +177,7 @@ def preprocess_data(deals, stages, users, funnel_mapping):
     # Return the processed dataframes to the main application
     return merged_df, stages_df, funnel_mapping
 
-def get_fiscal_dates(today, fiscal_start_month=1):
+def get_fiscal_dates(today, fiscal_start_month=1): #fiscal_start_monthは年度始まりの月２を指定する
     """
     Calculates the start and end dates for the current fiscal year and half-year
     using standard datetime and timedelta libraries.
@@ -185,14 +185,14 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     current_year = today.year
     current_month = today.month
 
-    if current_month >= fiscal_start_month:
+    if current_month >= fiscal_start_month: ##基本
         fiscal_year_start = datetime(current_year, fiscal_start_month, 1).date()
         fiscal_year_end = datetime(current_year + 1, fiscal_start_month, 1).date() - timedelta(days=1)
-    else:
+    else: ##４月スタートの１～３月などでは１暦年前にする
         fiscal_year_start = datetime(current_year - 1, fiscal_start_month, 1).date()
         fiscal_year_end = datetime(current_year, fiscal_start_month, 1).date() - timedelta(days=1)
 
-    if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6:
+    if current_month >= fiscal_start_month and current_month < fiscal_start_month + 6: #上半期
         half_year_start = fiscal_year_start
     else:
         start_month_h2 = fiscal_start_month + 6
@@ -212,7 +212,38 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     
     half_year_end = datetime(end_year, end_month, 1).date() - timedelta(days=1)
 
-    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end
+    # 会計年度の開始月を基準として、現在の月がどの四半期に属するかを判断します。
+    # 例：4月始まりの場合、Q1は4-6月、Q2は7-9月、Q3は10-12月、Q4は1-3月
+    # 簡潔にするために、現在の月と会計年度開始月の相対的な差を考慮します。
+    month_diff = (current_month - fiscal_start_month) % 12
+    quarter_index = month_diff // 3
+    # 基準月を四半期の開始月に合わせる
+    quarter_start_month = fiscal_start_month + (quarter_index * 3)
+    # 12を超える場合は調整
+    if quarter_start_month > 12:
+        quarter_start_month -= 12
+    
+    # 四半期の開始日と終了日を計算
+    if current_month < fiscal_start_month:
+        quarter_start_year = fiscal_year_start.year
+    else:
+        quarter_start_year = fiscal_year_start.year if quarter_start_month >= fiscal_start_month else fiscal_year_start.year + 1
+        
+    quarter_start = datetime.date(datetime.datetime(quarter_start_year, quarter_start_month, 1))
+
+    end_month = quarter_start.month + 3
+    end_year = quarter_start.year
+    if end_month > 12:
+        end_month -= 12
+        end_year += 1
+    quarter_end = datetime.date(datetime.datetime(end_year, end_month, 1)) - datetime.timedelta(days=1)
+
+    #今月の初日と最後の計算
+    month_start = datetime(current_year, current_month, 1).date()
+    month_end = datetime(current_year, current_month+1, 1).date() - timedelta(days=1)
+
+
+    return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end, month_start, month_end
 
 
 def display_kpis(df, start_date, end_date):
@@ -424,15 +455,21 @@ selected_sales_reps = st.sidebar.multiselect("営業担当者", sales_rep_option
 # 日付範囲の選択
 date_filter_preset = st.sidebar.radio(
     "日付範囲のプリセット",
-    ("カスタム", "今半期", "今年度", "全期間")
+    ("今月","今四半期", "今半期", "今年度", "全期間","カスタム")
 )
 
 today = datetime.now().date()
-fiscal_year_start, fiscal_year_end, half_year_start, half_year_end = get_fiscal_dates(today)
+fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, qtr_start, qtr_end, month_start, month_end = get_fiscal_dates(today)
 date_col = 'Snapshot_date'
 min_date_val = merged_df[date_col].min().date() if not merged_df[date_col].isna().all() else today
 max_date_val = merged_df[date_col].max().date() if not merged_df[date_col].isna().all() else today
 
+if date_filter_preset == "今月":
+    start_date = month_start
+    end_date = month_end
+if date_filter_preset == "今四半期":
+    start_date = qtr_start
+    end_date = qtr_end
 if date_filter_preset == "今半期":
     start_date = half_year_start
     end_date = half_year_end
