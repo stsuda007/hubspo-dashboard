@@ -287,7 +287,7 @@ def display_kpi_new(df, start_date, end_date):
     col1, col2, col3 = st.columns(3)
     with col1:
         total_sales_man_yen = math.floor(summary_df["受注金額合計"].sum() / 10000)
-        st.metric(label="合計売上", value=f"{total_sales_man_yen,.0f} 万円")
+        st.metric(label="合計売上", value=f"{total_sales_man_yen:,.0f} 万円")
     with col2:
         st.metric(label="受注案件", value=len(won_deals_df))
     with col3:
