@@ -537,7 +537,7 @@ filtered_df = filtered_df[
 st.title("HubSpot Deals ダッシュボード")
 
 # KPIセクション
-display_kpi_new(deals_df, ytd_start, ytd_end)
+display_kpi_new(merged_df, ytd_start, ytd_end)
 
 st.divider()
 
