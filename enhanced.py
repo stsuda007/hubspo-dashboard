@@ -240,9 +240,9 @@ def create_revenue_chart(df, start_date, end_date):
         st.info("受注案件データがありません。")
         return
     won_deals_df = won_deals_df[won_deals_df['受注日'].between(start_date, end_date)]
-        if won_deals_df.empty:
-            st.info("受注案件データがありません。")
-            return
+    if won_deals_df.empty:
+        st.info("受注案件データがありません。")
+        return
     won_deals_df = won_deals_df[['Deal Name', '受注金額', '見込売上額', '受注目標日', '受注日', 'Deal Type']]
     won_deals_df['受注月'] = won_deals_df['受注日'].dt.month
 
