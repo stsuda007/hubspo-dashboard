@@ -508,7 +508,9 @@ else:
         min_value=min_date_val,
         max_value=max_date_val
     )
-
+# YTD計算用
+ytd_start = fiscal_year_start # 年初
+ytd_end = today # YTD計算用
 # --- Apply filters ---
 filtered_df = merged_df.copy()
 
@@ -534,8 +536,7 @@ filtered_df = filtered_df[
 st.title("HubSpot Deals ダッシュボード")
 
 # KPIセクション
-# display_kpis(filtered_df, start_date, end_date)
-display_kpi_new(filtered_df,start_date, end_date)
+display_kpi_new(filtered_df, ytd_start, ytd_end)
 
 st.divider()
 
