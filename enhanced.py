@@ -535,7 +535,7 @@ st.title("HubSpot Deals ダッシュボード")
 
 # KPIセクション
 # display_kpis(filtered_df, start_date, end_date)
-display_kpi_new(filtered_df,start_date_end_date)
+display_kpi_new(filtered_df,start_date, end_date)
 
 st.divider()
 
