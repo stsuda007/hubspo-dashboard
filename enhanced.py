@@ -277,7 +277,7 @@ def display_kpis(df, start_date, end_date):
 def display_kpi_new(df, start_date, end_date):
     # 想定はYTD 年度開始日から本日まで
     st.subheader("主要KPI")
-    st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
+    st.markdown(f"**今年度:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
     won_deals_df, summary_df = create_revenue_chart(df, start_date, end_date) ## 月ごとの売上リスト
     # 毎月の売上表
     # まとめ表
@@ -536,7 +536,7 @@ filtered_df = filtered_df[
 st.title("HubSpot Deals ダッシュボード")
 
 # KPIセクション
-display_kpi_new(filtered_df, ytd_start, ytd_end)
+display_kpi_new(df, ytd_start, ytd_end)
 
 st.divider()
 
