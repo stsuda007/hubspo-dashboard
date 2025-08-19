@@ -239,6 +239,10 @@ def create_revenue_chart(df, start_date, end_date):
     if won_deals_df.empty:
         st.info("受注案件データがありません。")
         return
+    won_deals_df = won_deals_df[won_deals_df['受注日'].between(start_date, end_date)]
+        if won_deals_df.empty:
+        st.info("受注案件データがありません。")
+        return
     won_deals_df = won_deals_df[['Deal Name', '受注金額', '見込売上額', '受注目標日', '受注日', 'Deal Type']]
     won_deals_df['受注月'] = won_deals_df['受注日'].dt.month
 
@@ -279,6 +283,15 @@ def display_kpi_new(df, start_date, end_date):
     st.subheader("主要KPI")
     st.markdown(f"**今年度:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
     won_deals_df, summary_df = create_revenue_chart(df, start_date, end_date) ## 月ごとの売上リスト
+    # ３つの列
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        total_sales_man_yen = math.floor(summary_df["受注金額合計"].sum() / 10000)
+        st.metric(label="合計売上", value=f"{total_sales_man_yen,.0f} 万円")
+    with col2:
+        st.metric(label="受注案件", value=len(won_deals_df))
+    with col3:
+        st.metric(label="受注案件", value=len(won_deals_df[won_deals_df['Deal Type'] == '新規案件']))
     # 毎月の売上表
     st.dataframe(summary_df, hide_index=True)
     # まとめ表
