@@ -234,7 +234,7 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end
 
 ## 毎月の売上を表形式にする
-def create_revenue_chart(df, start_date, end_date)
+def create_revenue_chart(df, start_date, end_date):
     won_deals_df = df[df['受注/失注'] == '受注'].copy()
     if won_deals_df.empty:
         st.info("受注案件データがありません。")
