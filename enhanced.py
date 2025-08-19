@@ -280,12 +280,13 @@ def display_kpi_new(df, start_date, end_date):
     st.markdown(f"**今年度:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
     won_deals_df, summary_df = create_revenue_chart(df, start_date, end_date) ## 月ごとの売上リスト
     # 毎月の売上表
+    st.dataframe(summary_df, hide_index=True)
     # まとめ表
     for deal_type, group_df in won_deals_df.groupby('Deal Type'):
         # 'deal_type' will be the name of the group (e.g., '新規案件')
         # 'group_df' will be the DataFrame containing all rows for that group
         with st.expander(f"=={deal_type}=="):
-            st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1))
+            st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1),hide_index=True)
             # st.dataframe(group_df)
         st.write("\n") # Add a blank line for separation
     # st.dataframe(won_deals_df)
