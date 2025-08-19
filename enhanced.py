@@ -294,7 +294,7 @@ def display_kpi_new(df, start_date, end_date):
     with col2:
         st.metric(label="受注案件", value=len(won_deals_df))
     with col3:
-        st.metric(label="受注案件", value=len(won_deals_df[won_deals_df['Deal Type'] == '新規案件']))
+        st.metric(label="新規受注案件", value=len(won_deals_df[won_deals_df['Deal Type'] == '新規案件']))
     # 毎月の売上表
     st.dataframe(summary_df, hide_index=True)
     # まとめ表
@@ -551,7 +551,7 @@ filtered_df = filtered_df[
 
 
 # --- Main app layout ---
-st.title("HubSpot Deals ダッシュボード")
+st.title("ダッシュボード")
 
 # KPIセクション
 display_kpi_new(merged_df, ytd_start, ytd_end)
