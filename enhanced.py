@@ -233,6 +233,24 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end
 
+## 毎月の売上を表形式にする
+def create_revenue_chart(df, start_date, end_date)
+    won_deals_df = df[df['受注/失注'] == '受注'].copy()
+    if won_deals_df.empty:
+        st.info("受注案件データがありません。")
+        return
+    won_deals_df = won_deals_df[['Deal Name', '受注金額', '見込売上額', '受注目標日', '受注日', 'Deal Type']]
+    won_deals_df['受注月'] = won_deals_df['受注日'].dt.month
+
+    # Use groupby() with a list of columns for multi-level grouping
+    summary_df = won_deals_df.groupby(['Deal Type', '受注月']).agg(
+        受注件数=('Deal Name', 'count'), # Count the number of deals for each group
+        受注金額合計=('受注金額', 'sum'), # Sum the total deal amount for each group
+        # Join the names of all deals in each group into a single string
+        受注案件名一覧=('Deal Name', lambda x: ', '.join(x))
+    ).reset_index()
+    return won_deals_df, summary_df
+
 def display_kpis(df, start_date, end_date):
     st.subheader("主要KPI")
     st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
@@ -256,6 +274,20 @@ def display_kpis(df, start_date, end_date):
     with col3:
         st.metric(label="平均案件期間", value=f"{avg_deal_duration:,.0f} 日")
 
+def display_kpi_new(df, start_date, end_date):
+    # 想定はYTD 年度開始日から本日まで
+    st.subheader("主要KPI")
+    st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
+    won_deals_df, summary_df = create_revenue_chart(df, start_date, end_date) ## 月ごとの売上リスト
+    # 毎月の売上表
+    # まとめ表
+    for deal_type, group_df in won_deals_df.groupby('Deal Type'):
+        # 'deal_type' will be the name of the group (e.g., '新規案件')
+        # 'group_df' will be the DataFrame containing all rows for that group
+        st.write(f"--- {deal_type} ---")
+        st.dataframe(group_df)
+        st.write("\n") # Add a blank line for separation
+    st.dataframe(won_deals_df)
 
 def create_funnel_chart(df, funnel_mapping_df):
     st.subheader("案件ステージ別ファネルチャート")
@@ -502,7 +534,8 @@ filtered_df = filtered_df[
 st.title("HubSpot Deals ダッシュボード")
 
 # KPIセクション
-display_kpis(filtered_df, start_date, end_date)
+# display_kpis(filtered_df, start_date, end_date)
+display_kpi_new(filtered_df,start_date_end_date)
 
 st.divider()
 
