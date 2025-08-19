@@ -284,7 +284,7 @@ def display_kpi_new(df, start_date, end_date):
     for deal_type, group_df in won_deals_df.groupby('Deal Type'):
         # 'deal_type' will be the name of the group (e.g., '新規案件')
         # 'group_df' will be the DataFrame containing all rows for that group
-        st.expander(f"--- {deal_type} ---"):
+        with st.expander(f"=={deal_type}=="):
             st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1))
             # st.dataframe(group_df)
         st.write("\n") # Add a blank line for separation
