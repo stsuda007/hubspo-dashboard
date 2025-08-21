@@ -295,23 +295,12 @@ def display_kpi_new(df, start_date, end_date):
         st.metric(label="受注案件", value=len(won_deals_df))
     with col3:
         st.metric(label="新規受注案件", value=len(won_deals_df[won_deals_df['Deal Type'] == '新規案件']))
-    # 毎月の売上表
-    st.dataframe(summary_df, hide_index=True)
-    # まとめ表
-    for deal_type, group_df in won_deals_df.groupby('Deal Type'):
-        # 'deal_type' will be the name of the group (e.g., '新規案件')
-        # 'group_df' will be the DataFrame containing all rows for that group
-        with st.expander(f"=={deal_type}=="):
-            st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1),hide_index=True)
-            # st.dataframe(group_df)
-        st.write("\n") # Add a blank line for separation
-    # st.dataframe(won_deals_df)
 
-    # px.barを使って積み上げ棒グラフを作成
+        # px.barを使って積み上げ棒グラフを作成
     fig = px.bar(
-        summary_df['受注合計金額'],
+        summary_df,
         x="受注月",
-        y="受注合計金額",
+        y="受注金額合計",
         color="Deal Type",  # Deal Typeごとに色分け
         title="月別受注金額の推移（積み上げ）",
         labels={"受注金額": "受注金額", "受注月": "月"},
@@ -328,6 +317,19 @@ def display_kpi_new(df, start_date, end_date):
     st.plotly_chart(fig, use_container_width=True)
 
 
+    
+    
+    # 毎月の売上表
+    st.dataframe(summary_df, hide_index=True)
+    # まとめ表
+    for deal_type, group_df in won_deals_df.groupby('Deal Type'):
+        # 'deal_type' will be the name of the group (e.g., '新規案件')
+        # 'group_df' will be the DataFrame containing all rows for that group
+        with st.expander(f"=={deal_type}=="):
+            st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1),hide_index=True)
+            # st.dataframe(group_df)
+        st.write("\n") # Add a blank line for separation
+    # st.dataframe(won_deals_df)
 
 def create_funnel_chart(df, funnel_mapping_df):
     st.subheader("案件ステージ別ファネルチャート")
