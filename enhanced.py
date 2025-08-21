@@ -307,6 +307,28 @@ def display_kpi_new(df, start_date, end_date):
         st.write("\n") # Add a blank line for separation
     # st.dataframe(won_deals_df)
 
+    # px.barを使って積み上げ棒グラフを作成
+    fig = px.bar(
+        summary_df,
+        x="受注月",
+        y="受注合計金額",
+        color="Deal Type",  # Deal Typeごとに色分け
+        title="月別受注金額の推移（積み上げ）",
+        labels={"受注金額": "受注金額", "受注月": "月"},
+        barmode='stack',  # 棒を積み上げる設定
+        color_discrete_map={
+            'New': '#1f77b4',       # 青
+            'Upsell': '#ff7f0e',    # オレンジ
+            'Renewal': '#2ca02c',   # 緑
+            'Other': '#d62728'      # 赤
+        }
+    )
+
+    fig.update_layout(xaxis={'categoryorder':'category ascending'})
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
 def create_funnel_chart(df, funnel_mapping_df):
     st.subheader("案件ステージ別ファネルチャート")
     if df.empty:
