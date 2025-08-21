@@ -309,7 +309,7 @@ def display_kpi_new(df, start_date, end_date):
 
     # px.barを使って積み上げ棒グラフを作成
     fig = px.bar(
-        summary_df,
+        summary_df['受注合計金額'],
         x="受注月",
         y="受注合計金額",
         color="Deal Type",  # Deal Typeごとに色分け
