@@ -496,7 +496,7 @@ if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empt
 merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
 
 # --- Sidebar Filters ---
-st.sidebar.header("フィルタ")
+st.sidebar.header("フィルタ（ファネル図とタイムライン図用）")
 
 if '受注/失注' in merged_df.columns:
     deal_status_options = ["すべて"] + list(merged_df["受注/失注"].dropna().unique())
