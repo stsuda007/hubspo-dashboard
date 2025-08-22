@@ -582,18 +582,16 @@ display_kpi_new(merged_df, ytd_start, ytd_end)
 
 st.divider()
 
-st.subheader("デバッグ情報（マッピング）")
+#st.subheader("デバッグ情報（マッピング）")
 # debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
 # debug_df = filtered_df.copy()
 # st.warning("案件のファネルマッピング情報")
 # st.dataframe(debug_df[['Deal Name', 'Anken Type', 'Stage No', 'Stagename', 'Funnel_Stage_ID', 'Funnel_Name', 'Funnel_Debug_Info']])
 
 # ファネルチャートとバーチャートを横並びに配置
-col1, col2 = st.columns(2)
-with col1:
-    create_funnel_chart(filtered_df, funnel_mapping_df)
-with col2:
-    create_monthly_bar_chart(filtered_df)
+#col1, col2 = st.columns(2)
+#with col1:
+create_funnel_chart(filtered_df, funnel_mapping_df)
 #st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
 #st.write("Funnel_Name Mappingのユニークな値:", funnel_mapping_df["ファネル名称"].unique())
 st.divider()
