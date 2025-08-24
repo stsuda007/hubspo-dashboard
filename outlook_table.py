@@ -34,6 +34,35 @@ DEALS_SHEET = "Deals"
 STAGES_SHEET = "OtherParams"
 USERS_SHEET = "Users"
 
+# --- helpers ---
+def _norm(x):
+    if pd.isna(x):
+        return ""
+    return str(x).strip().lower()
+
+def is_lost_row(row: pd.Series) -> bool:
+    """失注を多面的に判定（列名は存在すれば使う / 無ければ無視）"""
+    stage_name = _norm(row.get("Stage Name"))
+    status_jp  = _norm(row.get("受注/失注"))
+    deal_stat  = _norm(row.get("Deal Status"))
+    lost_date  = row.get("失注日")
+
+    return (
+        ("失注" in stage_name) or
+        ("lost" in stage_name) or
+        ("失注" in status_jp) or
+        ("closed lost" in deal_stat) or
+        (pd.notna(lost_date) and str(lost_date).strip() != "")
+    )
+
+def strike_text(s: str) -> str:
+    """U+0336 を使った打消線（DataFrameでも崩れにくい）"""
+    if pd.isna(s):
+        return s
+    s = str(s)
+    return "".join(ch + "\u0336" for ch in s) + "\u0336"
+
+
 # --- データ取得関数（キャッシュ＆リトライ機能付き） ---
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
 def load_data_with_retry(max_retries=3, delay=5):
@@ -89,6 +118,8 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
+    # 失注判定フラグ
+    merged_df["is_lost"] = merged_df.apply(is_lost_row, axis=1)
     
     return merged_df
 
@@ -114,16 +145,27 @@ def display_pipeline_projects_table(df):
         return
 
     # 表示用にカラム名を変更
-    display_df = df_pipeline.rename(columns={
-        'Full Name': '営業担当者',
-        'Deal Name': '案件名',
-        'Stage Name': 'フェーズ'
-    })
+    display_df = (
+        df_pipeline
+        .rename(columns={
+            'Full Name': '営業担当者',
+            'Deal Name': '案件名',
+            'Stage Name': 'フェーズ'
+        })
+        .assign(is_lost=df_pipeline['is_lost'].values)
+    )
+
+    # 打消線付きの表示用案件名
+    display_df['案件名_表示'] = display_df.apply(
+        lambda r: strike_text(r['案件名']) if r['is_lost'] else r['案件名'],
+        axis=1
+    )
+
 
     # `cols_to_display`で列の順序を統一
     cols_to_display = [
         '営業担当者',
-        '案件名',
+        '案件名_表示',
         '受注目標日_dt',
         '納品予定日_dt',
         '見込売上額（円）',
@@ -166,7 +208,7 @@ def display_pipeline_projects_table(df):
     # 表示する列の順序を定義
     display_columns = ('営業担当者', '案件名', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
     for name, group2 in sorted_groups:
-        total_outlook2 = group2['見込売上額'].sum()
+        total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
         with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
             sorted_group2 = group2.sort_values(
                 by='受注目標日_dt',
@@ -177,6 +219,7 @@ def display_pipeline_projects_table(df):
             st.dataframe(
                 sorted_group2.drop(columns=['Grouping Month']),
                 column_config={
+                    "案件名_表示": st.column_config.TextColumn("案件名"),
                     "見込売上額（円）": st.column_config.TextColumn(
                         "見込売上額",
                         help="案件の予想売上金額"
@@ -199,9 +242,9 @@ def display_pipeline_projects_table(df):
                 hide_index=True,
                 use_container_width=True,
                 height=300,
-                #hide_columns=['見込売上額', '受注金額']
-                column_order=display_columns # ここに column_order を追加
+                column_order=('営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ')
             )
+
             # st.markdownの表示もカンマ区切りで表示
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
 
@@ -222,6 +265,7 @@ def display_pipeline_projects_table(df):
             st.dataframe(
                 group.drop(columns=['Grouping Month']),
                 column_config={
+                    "案件名_表示": st.column_config.TextColumn("案件名"),
                     "見込売上額（円）": st.column_config.TextColumn(
                         "見込売上額",
                         help="案件の予想売上金額"
@@ -247,8 +291,8 @@ def display_pipeline_projects_table(df):
                 #hide_columns=['見込売上額', '受注金額']
                 column_order=display_columns # ここに column_order を追加
             )
-            total_sum = group['受注金額'].sum()
-            total_outlook = group['見込売上額'].sum()
+            total_sum = group.loc[~group['is_lost'], '受注金額'].sum()
+            total_outlook = group.loc[~group['is_lost'], '見込売上額'].sum()
             st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
 
 # --- メインアプリケーションの実行部分 ---
