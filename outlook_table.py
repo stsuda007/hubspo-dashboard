@@ -6,13 +6,15 @@ import time
 from datetime import datetime, timedelta
 from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
+
 # --- Streamlitページの基本設定 ---
 st.set_page_config(
     page_title="Hubspot Dashboard",
     page_icon="🧊",
-    layout="wide",# streamlitが画面いっぱいに使う
+    layout="wide",  # streamlitが画面いっぱいに使う
     initial_sidebar_state="expanded",
 )
+
 # --- 認証 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
@@ -22,6 +24,7 @@ try:
 except KeyError:
     st.error("Googleサービスアカウントの認証情報が設定されていません。`st.secrets`に`GOOGLE_SERVICE_ACCOUNT`を設定してください。")
     st.stop()
+
 # ハードコードされたスプレッドシートキーを、st.secretsから読み込むように変更
 try:
     SPREADSHEET_KEY = st.secrets["SPREADSHEET_KEY"]
@@ -61,7 +64,6 @@ def strike_text(s: str) -> str:
         return s
     s = str(s)
     return "".join(ch + "\u0336" for ch in s) + "\u0336"
-
 
 # --- データ取得関数（キャッシュ＆リトライ機能付き） ---
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
@@ -118,6 +120,7 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
     merged_df = merged_df.merge(stages_df, on="Stage ID", how="left")
+
     # 失注判定フラグ
     merged_df["is_lost"] = merged_df.apply(is_lost_row, axis=1)
     
@@ -128,8 +131,6 @@ def display_pipeline_projects_table(df):
     """
     パイプライン案件の一覧をテーブルとして表示する。
     """
-    #st.subheader("パイプライン案件一覧")
-
     # 日付列をdatetime型に変換
     df['受注目標日_dt'] = pd.to_datetime(df['受注目標日'], errors='coerce')
     df['納品予定日_dt'] = pd.to_datetime(df['納品予定日'], errors='coerce')
@@ -144,7 +145,7 @@ def display_pipeline_projects_table(df):
         st.info("今月以降の受注目標日または納品予定日が記載されている案件がありません。")
         return
 
-    # 表示用にカラム名を変更
+    # 表示用にカラム名を変更し、is_lost を引き継ぎ
     display_df = (
         df_pipeline
         .rename(columns={
@@ -161,8 +162,12 @@ def display_pipeline_projects_table(df):
         axis=1
     )
 
+    # 失注行の金額は見た目だけ空欄化（合計は既に除外するので表示の混乱回避）
+    mask_lost = display_df['is_lost']
+    display_df.loc[mask_lost, '見込売上額（円）'] = ""
+    display_df.loc[mask_lost, '受注金額（円）'] = ""
 
-    # `cols_to_display`で列の順序を統一
+    # `cols_to_display`で列の順序を統一（is_lost は内部用に保持、表では非表示）
     cols_to_display = [
         '営業担当者',
         '案件名_表示',
@@ -171,8 +176,9 @@ def display_pipeline_projects_table(df):
         '見込売上額（円）',
         '受注金額（円）',
         'フェーズ',
-        '見込売上額', # 元の金額列
-        '受注金額' # 元の金額列
+        '見込売上額',    # 集計用（非表示）
+        '受注金額',      # 集計用（非表示）
+        'is_lost'        # 集計用（非表示）
     ]
     display_df = display_df[cols_to_display]
 
@@ -189,7 +195,7 @@ def display_pipeline_projects_table(df):
             return f"{today.month}月"
         elif date.year == next_month.year and date.month == next_month.month:
             return f"{next_month.month}月"
-        elif date.year == two_months_later.year and date.month == two_months_later.month:
+        elif date.year == two_months_later.year and date.month == two_months_lter.month:
             return f"{two_months_later.month}月"
         elif date.year == three_months_later.year and date.month == three_months_later.month:
             return f"{three_months_later.month}月"
@@ -205,9 +211,11 @@ def display_pipeline_projects_table(df):
     custom_order = [current_month_name, next_month_name, two_months_later_name, three_months_later_name, "その他"]
     sorted_groups = sorted(grouped_by_month, key=lambda x: custom_order.index(x[0]) if x[0] in custom_order else 99)
 
-    # 表示する列の順序を定義
-    display_columns = ('営業担当者', '案件名', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
+    # 表示する列の順序を定義（テーブル表示時に is_lost は非表示）
+    month_table_order = ('営業担当者', '案件名_表示', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
+
     for name, group2 in sorted_groups:
+        # 合計は失注以外のみ
         total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
         with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
             sorted_group2 = group2.sort_values(
@@ -242,10 +250,8 @@ def display_pipeline_projects_table(df):
                 hide_index=True,
                 use_container_width=True,
                 height=300,
-                column_order=('営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ')
+                column_order=month_table_order
             )
-
-            # st.markdownの表示もカンマ区切りで表示
             st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
 
     # --- 担当者ごとの表示 ---
@@ -258,6 +264,9 @@ def display_pipeline_projects_table(df):
         na_position='last'
     )
     grouped_by_user = sorted_by_user_df.groupby('営業担当者')
+
+    # テーブル列順（担当者別）
+    display_columns = ('営業担当者', '案件名_表示', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
 
     # 各担当者のデータを個別に表示
     for name, group in grouped_by_user:
@@ -288,17 +297,17 @@ def display_pipeline_projects_table(df):
                 use_container_width=True,
                 height=300,
                 hide_index=True,
-                #hide_columns=['見込売上額', '受注金額']
-                column_order=display_columns # ここに column_order を追加
+                column_order=display_columns
             )
             total_sum = group.loc[~group['is_lost'], '受注金額'].sum()
             total_outlook = group.loc[~group['is_lost'], '見込売上額'].sum()
             st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
 
+    st.caption("※ 打消線は失注案件を示します。合計には含めていません。")
+
 # --- メインアプリケーションの実行部分 ---
 def main():
-    #st.title("HubSpot Deals ダッシュボード")
-    st.markdown(f'<h2 style="color:#444444;font-size:24px;">{"受注目標のある案件パイプライン"}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<h2 style="color:#444444;font-size:24px;">{"受注目標のある案件パイプライン"}</h2>', unsafe_allow_html=True)
     deals_df, stages_df, users_df = load_data_with_retry()
     if deals_df.empty or stages_df.empty or users_df.empty:
         st.error("データの読み込みに失敗したため、アプリケーションを停止します。")
