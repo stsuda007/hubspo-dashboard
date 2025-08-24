@@ -281,8 +281,8 @@ def display_pipeline_projects_table(df):
                 hide_index=True,
             )
 
-            total_sum = group_df.loc[~group['is_lost'], '受注金額'].sum()
-            total_outlook = group_df.loc[~group['is_lost'], '見込売上額'].sum()
+            total_sum = group_df.loc[~group_df['is_lost'], '受注金額'].sum()
+            total_outlook = group_df.loc[~group_df['is_lost'], '見込売上額'].sum()
             st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
 
 
