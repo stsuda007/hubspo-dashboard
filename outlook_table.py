@@ -142,7 +142,6 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     # データ処理関数内でカンマ区切りの列を生成
     deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
-    deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(is_lost_row, axis=1)
     deals_df['受注金額（円）'] = deals_df['受注金額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
     
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
@@ -248,8 +247,8 @@ def display_pipeline_projects_table(df):
                 # 列順はここで揃える（column_order を使わない想定）
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            #styled = apply_strike_style(view_df)
-            styled = apply_dim_style(view_df, mode="both")
+            styled = apply_strike_style(view_df)
+            #styled = apply_dim_style(view_df, mode="both")
 
             st.dataframe(
                 styled,
