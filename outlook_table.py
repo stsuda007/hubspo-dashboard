@@ -247,7 +247,7 @@ def display_pipeline_projects_table(df):
                 # 列順はここで揃える（column_order を使わない想定）
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            styled = apply_strike_style(view_df)
+            styled = apply_strike_text(view_df)
             #styled = apply_dim_style(view_df, mode="both")
 
             st.dataframe(
