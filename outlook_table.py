@@ -183,11 +183,11 @@ def display_pipeline_projects_table(df):
     )
 
     # 打消線付きの表示用案件名
-    # display_df['案件名_表示'] = display_df.apply(
-    #    lambda r: strike_text(r['案件名']) if r['is_lost'] else r['案件名'],
-    #    axis=1
-    # )
-    # 置き換え（失注のときもそのまま文字を見せる）
+    # 失注行の見込金額（表示用テキスト）だけ打消し線にする
+    mask = display_df['is_lost'] & display_df['見込売上額（円）'].ne("")
+    display_df.loc[mask, '見込売上額（円）'] = (
+        display_df.loc[mask, '見込売上額（円）'].apply(strike_text)
+    )
     display_df['案件名_表示'] = display_df['案件名']
 
     # `cols_to_display`で列の順序を統一（is_lost は内部用に保持、表では非表示）
@@ -247,12 +247,10 @@ def display_pipeline_projects_table(df):
                 # 列順はここで揃える（column_order を使わない想定）
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            #styled = apply_strike_text(view_df)
-            #styled = apply_dim_style(view_df, mode="both")
 
             st.dataframe(
-                styled,
                 column_config={
+                    view_df.rename(columns={"案件名_表示": "案件名"}),
                     "案件名_表示": st.column_config.TextColumn("案件名"),
                     "見込売上額（円）": st.column_config.TextColumn("見込売上額", help="案件の予想売上金額"),
                     "受注金額（円）": st.column_config.TextColumn("受注金額", help="受注が確定した金額"),
@@ -291,11 +289,8 @@ def display_pipeline_projects_table(df):
                 .sort_values(by=['受注目標日_dt','is_lost'], ascending=[True,True], na_position='last')
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            # styled = apply_strike_style(view_df)
-            styled = apply_dim_style(view_df, mode = "bg")
-
             st.dataframe(
-                styled,
+                view_df.rename(columns={"案件名_表示": "案件名"}),
                 column_config={
                     "案件名_表示": st.column_config.TextColumn("案件名"),
                     "見込売上額（円）": st.column_config.TextColumn("見込売上額"),
