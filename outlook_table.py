@@ -175,8 +175,8 @@ def display_pipeline_projects_table(df):
         '受注金額（円）',
         'フェーズ',
         '見込売上額',    # 集計用（非表示）
-        '受注金額'      # 集計用（非表示）
-        #'is_lost'        # 集計用（非表示）
+        '受注金額',      # 集計用（非表示）
+        'is_lost'        # 集計用（非表示）
     ]
     display_df = display_df[cols_to_display]
 
