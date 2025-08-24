@@ -213,31 +213,33 @@ def display_pipeline_projects_table(df):
     month_table_order = ('営業担当者', '案件名_表示', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
 
     for name, group2 in sorted_groups:
-    total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
-    with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
-        view_df = (
-            group2
-            .drop(columns=['Grouping Month'])
-            .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
-            # 列順はここで揃える（column_order を使わない想定）
-            [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ','見込売上額','受注金額','is_lost']]
-        )
-        styled = apply_strike_style(view_df)
+        total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
+        with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
+            view_df = (
+                group2
+                .drop(columns=['Grouping Month'])
+                .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
+                # 列順はここで揃える（column_order を使わない想定）
+                [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ','見込売上額','受注金額','is_lost']]
+            )
+            styled = apply_strike_style(view_df)
 
-        st.dataframe(
-            styled,
-            column_config={
-                "案件名_表示": st.column_config.TextColumn("案件名"),
-                "見込売上額（円）": st.column_config.TextColumn("見込売上額", help="案件の予想売上金額"),
-                "受注金額（円）": st.column_config.TextColumn("受注金額", help="受注が確定した金額"),
-                "受注目標日_dt": st.column_config.DateColumn("受注目標日", format="MM/DD"),
-                "納品予定日_dt": st.column_config.DateColumn("納品予定日", format="MM/DD"),
-            },
-            hide_index=True,
-            use_container_width=True,
-            height=300,
-        )
-        st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+            st.dataframe(
+                styled,
+                column_config={
+                    "案件名_表示": st.column_config.TextColumn("案件名"),
+                    "見込売上額（円）": st.column_config.TextColumn("見込売上額", help="案件の予想売上金額"),
+                    "受注金額（円）": st.column_config.TextColumn("受注金額", help="受注が確定した金額"),
+                    "受注目標日_dt": st.column_config.DateColumn("受注目標日", format="MM/DD"),
+                    "納品予定日_dt": st.column_config.DateColumn("納品予定日", format="MM/DD"),
+                },
+                hide_index=True,
+                use_container_width=True,
+                height=300,
+            )
+            total_sum = group.loc[~group['is_lost'], '受注金額'].sum()
+            total_outlook = group.loc[~group['is_lost'], '見込売上額'].sum()
+            st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
 
 
     # --- 担当者ごとの表示 ---
