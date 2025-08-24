@@ -195,7 +195,7 @@ def display_pipeline_projects_table(df):
             return f"{today.month}月"
         elif date.year == next_month.year and date.month == next_month.month:
             return f"{next_month.month}月"
-        elif date.year == two_months_later.year and date.month == two_months_lter.month:
+        elif date.year == two_months_later.year and date.month == two_months_later.month:
             return f"{two_months_later.month}月"
         elif date.year == three_months_later.year and date.month == three_months_later.month:
             return f"{three_months_later.month}月"
