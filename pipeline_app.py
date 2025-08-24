@@ -1,3 +1,4 @@
+#savepoint from enhanced.py
 import time
 import json
 import gspread
@@ -6,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import datetime
+import math
 from datetime import timedelta, date
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import APIError
@@ -233,6 +235,30 @@ def get_fiscal_dates(today, fiscal_start_month=1):
     
     return fiscal_year_start, fiscal_year_end, half_year_start, half_year_end, quarter_start, quarter_end
 
+## 毎月の売上を表形式にする
+def create_revenue_chart(df, start_date, end_date):
+    won_deals_df = df[df['受注/失注'] == '受注'].copy()
+    if won_deals_df.empty:
+        st.info("受注案件データがありません。")
+        return
+    start_datetime = pd.to_datetime(start_date)
+    end_datetime = pd.to_datetime(end_date)
+    won_deals_df = won_deals_df[won_deals_df['受注日'].between(start_datetime, end_datetime)]
+    if won_deals_df.empty:
+        st.info("受注案件データがありません。")
+        return
+    won_deals_df = won_deals_df[['Deal Name', '受注金額', '見込売上額', '受注目標日', '受注日', 'Deal Type']]
+    won_deals_df['受注月'] = won_deals_df['受注日'].dt.month
+
+    # Use groupby() with a list of columns for multi-level grouping
+    summary_df = won_deals_df.groupby(['Deal Type', '受注月']).agg(
+        受注件数=('Deal Name', 'count'), # Count the number of deals for each group
+        受注金額合計=('受注金額', 'sum'), # Sum the total deal amount for each group
+        # Join the names of all deals in each group into a single string
+        受注案件名一覧=('Deal Name', lambda x: ', '.join(x))
+    ).reset_index()
+    return won_deals_df, summary_df
+
 def display_kpis(df, start_date, end_date):
     st.subheader("主要KPI")
     st.markdown(f"**日付範囲:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
@@ -256,6 +282,55 @@ def display_kpis(df, start_date, end_date):
     with col3:
         st.metric(label="平均案件期間", value=f"{avg_deal_duration:,.0f} 日")
 
+def display_kpi_new(df, start_date, end_date):
+    # 想定はYTD 年度開始日から本日まで
+    st.subheader("主要KPI")
+    st.markdown(f"**今年度:** {start_date.strftime('%Y/%m/%d')} ~ {end_date.strftime('%Y/%m/%d')}")
+    won_deals_df, summary_df = create_revenue_chart(df, start_date, end_date) ## 月ごとの売上リスト
+    # ３つの列
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        total_sales_man_yen = math.floor(summary_df["受注金額合計"].sum() / 10000)
+        st.metric(label="合計売上", value=f"{total_sales_man_yen:,.0f} 万円")
+    with col2:
+        st.metric(label="受注案件", value=len(won_deals_df))
+    with col3:
+        st.metric(label="新規受注案件", value=len(won_deals_df[won_deals_df['Deal Type'] == '新規案件']))
+
+        # px.barを使って積み上げ棒グラフを作成
+    fig = px.bar(
+        summary_df,
+        x="受注月",
+        y="受注金額合計",
+        color="Deal Type",  # Deal Typeごとに色分け
+        title="月別受注金額の推移（積み上げ）",
+        labels={"受注金額": "受注金額", "受注月": "月"},
+        barmode='stack',  # 棒を積み上げる設定
+        color_discrete_map={
+            'New': '#1f77b4',       # 青
+            'Upsell': '#ff7f0e',    # オレンジ
+            'Renewal': '#2ca02c',   # 緑
+            'Other': '#d62728'      # 赤
+        }
+    )
+
+    fig.update_layout(xaxis={'categoryorder':'category ascending'})
+    st.plotly_chart(fig, use_container_width=True)
+
+
+    
+    
+    # 毎月の売上表
+    st.dataframe(summary_df, hide_index=True)
+    # まとめ表
+    for deal_type, group_df in won_deals_df.groupby('Deal Type'):
+        # 'deal_type' will be the name of the group (e.g., '新規案件')
+        # 'group_df' will be the DataFrame containing all rows for that group
+        with st.expander(f"=={deal_type}=="):
+            st.dataframe(group_df.drop(['Deal Type', '受注月'], axis=1),hide_index=True)
+            # st.dataframe(group_df)
+        st.write("\n") # Add a blank line for separation
+    # st.dataframe(won_deals_df)
 
 def create_funnel_chart(df, funnel_mapping_df):
     st.subheader("案件ステージ別ファネルチャート")
@@ -422,7 +497,7 @@ if deals_df.empty or stages_df.empty or users_df.empty or funnel_mapping_df.empt
 merged_df, stages_df, funnel_mapping_df = preprocess_data(deals_df, stages_df, users_df, funnel_mapping_df)
 
 # --- Sidebar Filters ---
-st.sidebar.header("フィルタ")
+st.sidebar.header("フィルタ（ファネル図とタイムライン図用）")
 
 if '受注/失注' in merged_df.columns:
     deal_status_options = ["すべて"] + list(merged_df["受注/失注"].dropna().unique())
@@ -476,7 +551,9 @@ else:
         min_value=min_date_val,
         max_value=max_date_val
     )
-
+# YTD計算用
+ytd_start = fiscal_year_start # 年初
+ytd_end = today # YTD計算用
 # --- Apply filters ---
 filtered_df = merged_df.copy()
 
@@ -499,25 +576,23 @@ filtered_df = filtered_df[
 
 
 # --- Main app layout ---
-st.title("HubSpot Deals ダッシュボード")
+st.title("ダッシュボード")
 
 # KPIセクション
-display_kpis(filtered_df, start_date, end_date)
+display_kpi_new(merged_df, ytd_start, ytd_end)
 
 st.divider()
 
-st.subheader("デバッグ情報（マッピング）")
+#st.subheader("デバッグ情報（マッピング）")
 # debug_df = filtered_df[filtered_df['Funnel_Debug_Info'].notna()]
 # debug_df = filtered_df.copy()
 # st.warning("案件のファネルマッピング情報")
 # st.dataframe(debug_df[['Deal Name', 'Anken Type', 'Stage No', 'Stagename', 'Funnel_Stage_ID', 'Funnel_Name', 'Funnel_Debug_Info']])
 
 # ファネルチャートとバーチャートを横並びに配置
-col1, col2 = st.columns(2)
-with col1:
-    create_funnel_chart(filtered_df, funnel_mapping_df)
-with col2:
-    create_monthly_bar_chart(filtered_df)
+#col1, col2 = st.columns(2)
+#with col1:
+create_funnel_chart(filtered_df, funnel_mapping_df)
 #st.write("Funnel_Name 列のユニークな値:", filtered_df["Funnel_Name"].dropna().unique())
 #st.write("Funnel_Name Mappingのユニークな値:", funnel_mapping_df["ファネル名称"].unique())
 st.divider()
