@@ -249,8 +249,8 @@ def display_pipeline_projects_table(df):
             )
 
             st.dataframe(
+                view_df.rename(columns={"案件名_表示": "案件名"}),
                 column_config={
-                    view_df.rename(columns={"案件名_表示": "案件名"}),
                     "案件名_表示": st.column_config.TextColumn("案件名"),
                     "見込売上額（円）": st.column_config.TextColumn("見込売上額", help="案件の予想売上金額"),
                     "受注金額（円）": st.column_config.TextColumn("受注金額", help="受注が確定した金額"),
