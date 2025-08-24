@@ -42,7 +42,12 @@ def _norm(x):
     if pd.isna(x):
         return ""
     return str(x).strip().lower()
-
+def strike_text(s: str) -> str:
+    """U+0336 を使った打消線（DataFrameでも崩れにくい）"""
+    if pd.isna(s):
+        return s
+    s = str(s)
+    return "".join(ch + "\u0336" for ch in s) + "\u0336"
 def is_lost_row(row: pd.Series) -> bool:
     """失注を多面的に判定（列名は存在すれば使う / 無ければ無視）"""
     stage_name = _norm(row.get("Stage Name"))
@@ -137,6 +142,7 @@ def process_and_merge_data(deals_df, stages_df, users_df):
     
     # データ処理関数内でカンマ区切りの列を生成
     deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
+    deals_df['見込売上額（円）'] = deals_df['見込売上額'].apply(is_lost_row, axis=1)
     deals_df['受注金額（円）'] = deals_df['受注金額'].apply(lambda x: f"￥{x:,.0f}" if pd.notna(x) else "")
     
     merged_df = deals_df.merge(users_df[["User ID", "Full Name"]], on="User ID", how="left")
