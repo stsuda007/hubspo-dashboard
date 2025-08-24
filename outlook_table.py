@@ -238,7 +238,7 @@ def display_pipeline_projects_table(df):
             view_df = (
                 group2
                 .drop(columns=['Grouping Month'])
-                .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
+                .sort_values(by=['受注目標日_dt','is_lost'], ascending=[True,True], na_position='last')
                 # 列順はここで揃える（column_order を使わない想定）
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
@@ -283,7 +283,7 @@ def display_pipeline_projects_table(df):
             view_df = (
                 group_df
                 .drop(columns=['Grouping Month'])
-                .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
+                .sort_values(by=['受注目標日_dt','is_lost'], ascending=[True,True], na_position='last')
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
             # styled = apply_strike_style(view_df)
