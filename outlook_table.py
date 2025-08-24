@@ -186,7 +186,7 @@ def display_pipeline_projects_table(df):
     # 失注行の見込金額（表示用テキスト）だけ打消し線にする
     mask = display_df['is_lost'] & display_df['見込売上額（円）'].ne("")
     display_df.loc[mask, '見込売上額（円）'] = (
-        display_df.loc[mask, '見込売上額（円）']..str.replace(r'^[￥¥]\s*', '', regex=True).apply(strike_text)
+        display_df.loc[mask, '見込売上額（円）'].str.replace(r'^[￥¥]\s*', '', regex=True).apply(strike_text)
     )
     
     display_df['案件名_表示'] = display_df['案件名']
