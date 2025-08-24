@@ -64,6 +64,26 @@ def apply_strike_style(df: pd.DataFrame):
             return ['text-decoration: line-through'] * len(row)
         return [''] * len(row)
     return df.style.apply(strike_style, axis=1)
+def apply_dim_style(df: pd.DataFrame, mode: str = "both",
+                    text_gray: str = "#6b7280",   # Tailwind: gray-500
+                    bg_gray: str = "#f3f4f6"):    # Tailwind: gray-100
+    """
+    is_lost==True の行をグレーアウト。
+    mode: "text"（文字だけ）, "bg"（背景だけ）, "both"（両方）
+    """
+    def style_row(row):
+        if bool(row.get('is_lost', False)):
+            styles = []
+            for _ in row.index:
+                parts = []
+                if mode in ("text", "both"):
+                    parts.append(f"color: {text_gray}")
+                if mode in ("bg", "both"):
+                    parts.append(f"background-color: {bg_gray}")
+                styles.append("; ".join(parts))
+            return styles
+        return [""] * len(row)
+    return df.style.apply(style_row, axis=1)
 
 
 # --- データ取得関数（キャッシュ＆リトライ機能付き） ---
@@ -222,7 +242,8 @@ def display_pipeline_projects_table(df):
                 # 列順はここで揃える（column_order を使わない想定）
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            styled = apply_strike_style(view_df)
+            #styled = apply_strike_style(view_df)
+            styled = apply_dim_style(view_df, mode="both")
 
             st.dataframe(
                 styled,
@@ -265,7 +286,8 @@ def display_pipeline_projects_table(df):
                 .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
                 [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ']]
             )
-            styled = apply_strike_style(view_df)
+            # styled = apply_strike_style(view_df)
+            styled = apply_dim_style(view_df, mode = "bg")
 
             st.dataframe(
                 styled,
