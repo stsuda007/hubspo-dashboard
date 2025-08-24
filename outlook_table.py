@@ -57,13 +57,14 @@ def is_lost_row(row: pd.Series) -> bool:
         ("closed lost" in deal_stat) or
         (pd.notna(lost_date) and str(lost_date).strip() != "")
     )
+def apply_strike_style(df: pd.DataFrame) -> pd.io.formats.style.Styler:
+    """is_lost==True の行をまるごと打消し線にする"""
+    def strike_style(row):
+        if bool(row.get('is_lost', False)):
+            return ['text-decoration: line-through'] * len(row)
+        return [''] * len(row)
+    return df.style.apply(strike_style, axis=1)
 
-def strike_text(s: str) -> str:
-    """U+0336 を使った打消線（DataFrameでも崩れにくい）"""
-    if pd.isna(s):
-        return s
-    s = str(s)
-    return "".join(ch + "\u0336" for ch in s) + "\u0336"
 
 # --- データ取得関数（キャッシュ＆リトライ機能付き） ---
 @st.cache_data(ttl=300, show_spinner="Google Sheets からデータ取得中...")
@@ -157,15 +158,12 @@ def display_pipeline_projects_table(df):
     )
 
     # 打消線付きの表示用案件名
-    display_df['案件名_表示'] = display_df.apply(
-        lambda r: strike_text(r['案件名']) if r['is_lost'] else r['案件名'],
-        axis=1
-    )
-
-    # 失注行の金額は見た目だけ空欄化（合計は既に除外するので表示の混乱回避）
-    mask_lost = display_df['is_lost']
-    display_df.loc[mask_lost, '見込売上額（円）'] = ""
-    display_df.loc[mask_lost, '受注金額（円）'] = ""
+    # display_df['案件名_表示'] = display_df.apply(
+    #    lambda r: strike_text(r['案件名']) if r['is_lost'] else r['案件名'],
+    #    axis=1
+    # )
+    # 置き換え（失注のときもそのまま文字を見せる）
+    display_df['案件名_表示'] = display_df['案件名']
 
     # `cols_to_display`で列の順序を統一（is_lost は内部用に保持、表では非表示）
     cols_to_display = [
@@ -215,44 +213,32 @@ def display_pipeline_projects_table(df):
     month_table_order = ('営業担当者', '案件名_表示', '受注目標日_dt', '納品予定日_dt', '見込売上額（円）', '受注金額（円）', 'フェーズ')
 
     for name, group2 in sorted_groups:
-        # 合計は失注以外のみ
-        total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
-        with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
-            sorted_group2 = group2.sort_values(
-                by='受注目標日_dt',
-                ascending=True,
-                na_position='last'
-            ).copy()
-            
-            st.dataframe(
-                sorted_group2.drop(columns=['Grouping Month']),
-                column_config={
-                    "案件名_表示": st.column_config.TextColumn("案件名"),
-                    "見込売上額（円）": st.column_config.TextColumn(
-                        "見込売上額",
-                        help="案件の予想売上金額"
-                    ),
-                    "受注金額（円）": st.column_config.TextColumn(
-                        "受注金額",
-                        help="受注が確定した金額"
-                    ),
-                    "受注目標日_dt": st.column_config.DateColumn(
-                        "受注目標日",
-                        help="受注の目標日",
-                        format="MM/DD",
-                    ),
-                    "納品予定日_dt": st.column_config.DateColumn(
-                        "納品予定日",
-                        help="納品の予定日",
-                        format="MM/DD",
-                    ),
-                },
-                hide_index=True,
-                use_container_width=True,
-                height=300,
-                column_order=month_table_order
-            )
-            st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+    total_outlook2 = group2.loc[~group2['is_lost'], '見込売上額'].sum()
+    with st.expander(f"{name} ー 売上見込額: {total_outlook2:,.0f}"):
+        view_df = (
+            group2
+            .drop(columns=['Grouping Month'])
+            .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
+            # 列順はここで揃える（column_order を使わない想定）
+            [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ','見込売上額','受注金額','is_lost']]
+        )
+        styled = apply_strike_style(view_df)
+
+        st.dataframe(
+            styled,
+            column_config={
+                "案件名_表示": st.column_config.TextColumn("案件名"),
+                "見込売上額（円）": st.column_config.TextColumn("見込売上額", help="案件の予想売上金額"),
+                "受注金額（円）": st.column_config.TextColumn("受注金額", help="受注が確定した金額"),
+                "受注目標日_dt": st.column_config.DateColumn("受注目標日", format="MM/DD"),
+                "納品予定日_dt": st.column_config.DateColumn("納品予定日", format="MM/DD"),
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=300,
+        )
+        st.markdown(f"***合計売上見込額: {total_outlook2:,.0f}***")
+
 
     # --- 担当者ごとの表示 ---
     st.subheader("営業担当者別パイプライン")
@@ -270,40 +256,33 @@ def display_pipeline_projects_table(df):
 
     # 各担当者のデータを個別に表示
     for name, group in grouped_by_user:
-        with st.expander(f"{name} ー 案件数:{group.shape[0]}"):
-            st.dataframe(
-                group.drop(columns=['Grouping Month']),
-                column_config={
-                    "案件名_表示": st.column_config.TextColumn("案件名"),
-                    "見込売上額（円）": st.column_config.TextColumn(
-                        "見込売上額",
-                        help="案件の予想売上金額"
-                    ),
-                    "受注金額（円）": st.column_config.TextColumn(
-                        "受注金額",
-                        help="受注が確定した金額"
-                    ),
-                    "受注目標日_dt": st.column_config.DateColumn(
-                        "受注目標日",
-                        help="受注の目標日",
-                        format="MM/DD",
-                    ),
-                    "納品予定日_dt": st.column_config.DateColumn(
-                        "納品予定日",
-                        help="納品の予定日",
-                        format="MM/DD",
-                    ),
-                },
-                use_container_width=True,
-                height=300,
-                hide_index=True,
-                column_order=display_columns
-            )
-            total_sum = group.loc[~group['is_lost'], '受注金額'].sum()
-            total_outlook = group.loc[~group['is_lost'], '見込売上額'].sum()
-            st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
+    with st.expander(f"{name} ー 案件数:{group.shape[0]}"):
+        view_df = (
+            group
+            .drop(columns=['Grouping Month'])
+            .sort_values(by='受注目標日_dt', ascending=True, na_position='last')
+            [['営業担当者','案件名_表示','受注目標日_dt','納品予定日_dt','見込売上額（円）','受注金額（円）','フェーズ','見込売上額','受注金額','is_lost']]
+        )
+        styled = apply_strike_style(view_df)
 
-    st.caption("※ 打消線は失注案件を示します。合計には含めていません。")
+        st.dataframe(
+            styled,
+            column_config={
+                "案件名_表示": st.column_config.TextColumn("案件名"),
+                "見込売上額（円）": st.column_config.TextColumn("見込売上額"),
+                "受注金額（円）": st.column_config.TextColumn("受注金額"),
+                "受注目標日_dt": st.column_config.DateColumn("受注目標日", format="MM/DD"),
+                "納品予定日_dt": st.column_config.DateColumn("納品予定日", format="MM/DD"),
+            },
+            use_container_width=True,
+            height=300,
+            hide_index=True,
+        )
+
+        total_sum = group.loc[~group['is_lost'], '受注金額'].sum()
+        total_outlook = group.loc[~group['is_lost'], '見込売上額'].sum()
+        st.markdown(f"**合計受注金額: {total_sum:,.0f}　合計売上見込額: {total_outlook:,.0f}**")
+
 
 # --- メインアプリケーションの実行部分 ---
 def main():
