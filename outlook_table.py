@@ -57,7 +57,7 @@ def is_lost_row(row: pd.Series) -> bool:
         ("closed lost" in deal_stat) or
         (pd.notna(lost_date) and str(lost_date).strip() != "")
     )
-def apply_strike_style(df: pd.DataFrame) -> pd.io.formats.style.Styler:
+def apply_strike_style(df: pd.DataFrame):
     """is_lost==True の行をまるごと打消し線にする"""
     def strike_style(row):
         if bool(row.get('is_lost', False)):
