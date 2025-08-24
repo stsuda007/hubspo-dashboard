@@ -188,6 +188,7 @@ def display_pipeline_projects_table(df):
     display_df.loc[mask, '見込売上額（円）'] = (
         display_df.loc[mask, '見込売上額（円）'].apply(strike_text)
     )
+    
     display_df['案件名_表示'] = display_df['案件名']
 
     # `cols_to_display`で列の順序を統一（is_lost は内部用に保持、表では非表示）
